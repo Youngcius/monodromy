@@ -11,7 +11,7 @@ import numpy as np
 from collections import defaultdict
 from itertools import count
 
-for qubit_count in count(2):
+for qubit_count in count(3):
     qc = qiskit.circuit.library.QFT(qubit_count)
     cx_counts = defaultdict(lambda: 0)
     for gate, _, _ in qiskit.transpile(
