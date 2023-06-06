@@ -9,6 +9,33 @@ Qiskit AnalysisPass which determines the depth of a circuit. I want to use this 
 (2) look up the cost using the monodromy polytope
 (3) return the longest path, weighted against the decomposition cost
 
+```python
+from monodromy.depthPass import MonodromyDepthPass
+from qiskit.transpiler.passmanager import PassManager
+from qiskit.circuit.library import CXGate
+from qiskit import QuantumCircuit
+
+pm = PassManager()
+pm.append(MonodromyDepthPass(basis_gate=CXGate()))
+
+qc= QuantumCircuit(4)
+qc.swap(0,1)
+qc.cx(0,1)
+qc.cx(1,2)
+qc.swap(0,1)
+qc.rz(0.5, 0)
+qc.cx(0,1)
+qc.ry(0.7, 1)
+qc.cx(1,2)
+qc.swap(0,1)
+qc.cx(2,3)
+
+pm.run(qc)
+expected_value = 9
+assert pm.property_set["monodromy_depth"] == expected_value, "Monodromy depth not calculated correctly!"
+
+```
+
 #### Change log:
 
 1. Small fix in setup.py for installation
