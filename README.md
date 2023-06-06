@@ -2,13 +2,17 @@
 
 Computations in the monodromy polytope for quantum gate sets
 
-## Fork
+## Fork Updates
 
-Qiskit AnalysisPass which determines the depth of a circuit. I want to use this in various transpiler passes as a subroutine, without actually having to perform decomposition. This tool lets me count the iterate the cost of a circuit without actually having to decompose it. Simple procedure, given a basis gate(s):
+This fork introduces a Qiskit `AnalysisPass` named MonodromyDepthPass located in [monodromy/depthPass.py](monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition. The primary use case for this tool is as a subroutine in various transpiler passes.
 
-1. force consolidate unitary blocks
-2. look up the cost using the monodromy polytope
-3. return the longest path, weighted against the decomposition cost
+The implemented procedure, given a set of basis gates, performs the following steps:
+
+1. Consolidates unitary blocks within the circuit.
+2. Looks up the cost of the consolidated circuit using the monodromy polytope.
+3. Returns the length of the longest path within the circuit, where the length is determined by the decomposition cost.
+
+Here's an example of how to use `MonodromyDepthPass`:
 
 ```python
 from monodromy.depthPass import MonodromyDepthPass
@@ -34,15 +38,15 @@ qc.cx(2,3)
 pm.run(qc)
 expected_value = 9
 assert pm.property_set["monodromy_depth"] == expected_value, "Monodromy depth not calculated correctly!"
-
 ```
+
+In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepthPass` with `CXGate` as the basis gate. The PassManager `pm` runs the circuit, and the computed depth is compared against an expected value.
 
 #### Change log:
 
-1. Small fix in setup.py for installation
-2. WIP Write consolidate + depth as a Qiskit AnalysisPass
-
-The original work was done in this repository (https://github.com/Pitt-JonesLab/slam_decomposition), which became a [mess](https://github.com/Pitt-JonesLab/slam_decomposition/blob/main/src/slam/utils/polytopes/polytope_wrap.py).
+Minor modification in setup.py for installation.
+WIP: Developing the combination of consolidation and depth analysis into a Qiskit AnalysisPass.
+The original work was conducted in the [Pitt-JonesLab/slam_decomposition](https://github.com/Pitt-JonesLab/slam_decomposition) repository. This repository is a cleaner, more focused implementation of the key ideas, avoiding the complexities found in the original [polytope_wrap.py](https://github.com/Pitt-JonesLab/slam_decomposition/blob/main/src/slam/utils/polytopes/polytope_wrap.py) file.
 
 ---
 
