@@ -5,9 +5,10 @@ Computations in the monodromy polytope for quantum gate sets
 ## Fork
 
 Qiskit AnalysisPass which determines the depth of a circuit. I want to use this in various transpiler passes as a subroutine, without actually having to perform decomposition. This tool lets me count the iterate the cost of a circuit without actually having to decompose it. Simple procedure, given a basis gate(s):
-(1) force consolidate unitary blocks
-(2) look up the cost using the monodromy polytope
-(3) return the longest path, weighted against the decomposition cost
+
+1. force consolidate unitary blocks
+2. look up the cost using the monodromy polytope
+3. return the longest path, weighted against the decomposition cost
 
 ```python
 from monodromy.depthPass import MonodromyDepthPass
