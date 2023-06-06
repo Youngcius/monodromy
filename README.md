@@ -4,7 +4,7 @@ Computations in the monodromy polytope for quantum gate sets
 
 ## Fork Updates
 
-This fork introduces a Qiskit `AnalysisPass` named MonodromyDepthPass located in [monodromy/depthPass.py](monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition. The primary use case for this tool is as a subroutine in various transpiler passes.
+This fork introduces a Qiskit `AnalysisPass` named MonodromyDepth located in [monodromy/depthPass.py](monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition. The primary use case for this tool is as a subroutine in various transpiler passes.
 
 The implemented procedure, given a set of basis gates, performs the following steps:
 
@@ -12,16 +12,16 @@ The implemented procedure, given a set of basis gates, performs the following st
 2. Looks up the cost of the consolidated circuit using the monodromy polytope.
 3. Returns the length of the longest path within the circuit, where the length is determined by the decomposition cost.
 
-Here's an example of how to use `MonodromyDepthPass`:
+Here's an example of how to use `MonodromyDepth`:
 
 ```python
-from monodromy.depthPass import MonodromyDepthPass
+from monodromy.depthPass import MonodromyDepth
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.circuit.library import CXGate
 from qiskit import QuantumCircuit
 
 pm = PassManager()
-pm.append(MonodromyDepthPass(basis_gate=CXGate()))
+pm.append(MonodromyDepth(basis_gate=CXGate()))
 
 qc= QuantumCircuit(4)
 qc.swap(0,1)
@@ -40,7 +40,7 @@ expected_value = 9
 assert pm.property_set["monodromy_depth"] == expected_value, "Monodromy depth not calculated correctly!"
 ```
 
-In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepthPass` with `CXGate` as the basis gate. The PassManager `pm` runs the circuit, and the computed depth is compared against an expected value.
+In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepth` with `CXGate` as the basis gate. The PassManager `pm` runs the circuit, and the computed depth is compared against an expected value.
 
 #### Change log:
 

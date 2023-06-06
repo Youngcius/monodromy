@@ -12,9 +12,9 @@ from qiskit.dagcircuit import DAGCircuit, DAGOpNode
 from qiskit.transpiler.passes import Collect2qBlocks, ConsolidateBlocks
 import retworkx
 
-class MonodromyDepthPass(AnalysisPass):
+class MonodromyDepth(AnalysisPass):
     """
-    MonodromyDepthPass class extends the AnalysisPass to perform cost analysis on a given 
+    MonodromyDepth class extends the AnalysisPass to perform cost analysis on a given 
     CircuitDAG with respect to a specified 2-qubit basis gate. This basis gate is crucial in 
     calculating the minimum execution cost of 2-qubit blocks within the CircuitDAG.
 
