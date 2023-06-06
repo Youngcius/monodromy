@@ -17,30 +17,50 @@ Here's an example of how to use `MonodromyDepth`:
 ```python
 from monodromy.depthPass import MonodromyDepth
 from qiskit.transpiler.passmanager import PassManager
-from qiskit.circuit.library import CXGate
+from qiskit.circuit.library import iSwapGate
+from qiskit.transpiler.passes import Depth
 from qiskit import QuantumCircuit
 
 pm = PassManager()
-pm.append(MonodromyDepth(basis_gate=CXGate()))
+pm.append(Depth())
+pm.append(MonodromyDepth(basis_gate=iSwapGate().power(1/2)))
 
 qc= QuantumCircuit(4)
 qc.swap(0,1)
 qc.cx(0,1)
 qc.cx(1,2)
 qc.swap(0,1)
-qc.rz(0.5, 0)
 qc.cx(0,1)
-qc.ry(0.7, 1)
+qc.cx(0,1)
+qc.swap(2,3)
+qc.cx(0,2)
 qc.cx(1,2)
 qc.swap(0,1)
 qc.cx(2,3)
+qc.cx(2,3)
+display(qc.draw())
 
 pm.run(qc)
-expected_value = 9
+expected_value = 14
+print(f"Depth: {pm.property_set['depth']}")
+print(f"Monodromy depth: {pm.property_set['monodromy_depth']}")
 assert pm.property_set["monodromy_depth"] == expected_value, "Monodromy depth not calculated correctly!"
 ```
 
-In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepth` with `CXGate` as the basis gate. The PassManager `pm` runs the circuit, and the computed depth is compared against an expected value.
+```bash
+q_0: ─X───■────────X───■────■────■─────────X───────
+      │ ┌─┴─┐      │ ┌─┴─┐┌─┴─┐  │         │
+q_1: ─X─┤ X ├──■───X─┤ X ├┤ X ├──┼────■────X───────
+        └───┘┌─┴─┐   └───┘└───┘┌─┴─┐┌─┴─┐
+q_2: ────────┤ X ├─X───────────┤ X ├┤ X ├──■────■──
+             └───┘ │           └───┘└───┘┌─┴─┐┌─┴─┐
+q_3: ──────────────X─────────────────────┤ X ├┤ X ├
+                                         └───┘└───┘
+Depth: 10
+Monodromy depth: 14
+```
+
+In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepth` with `CXGate` as the basis gate. The PassManager `pm` runs the circuit, and the computed depth is compared against an expected value. Confirms that using this pass is key to recognizing the changing cost of depth post-decomposition.
 
 #### Change log:
 
