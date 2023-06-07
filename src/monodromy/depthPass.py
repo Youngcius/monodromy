@@ -11,6 +11,8 @@ import logging
 from qiskit.dagcircuit import DAGCircuit, DAGOpNode
 from qiskit.transpiler.passes import Collect2qBlocks, ConsolidateBlocks
 import retworkx
+from functools import lru_cache
+
 
 class MonodromyDepth(AnalysisPass):
     """
@@ -26,19 +28,22 @@ class MonodromyDepth(AnalysisPass):
     CircuitDAG into 2-qubit blocks and consolidate them respectively. 
     """
 
+    _coverage_cache = {}  # Class level cache
+
     def __init__(self, basis_gate: Instruction):
-        """
-        Constructor takes a qiskit.Instruction for the basis gate.
-        In the future, this can be extended to accept a list of basis gates.
-        
-        :param basis_gate: A unitary representing the basis gate for the analysis.
-        """
         super().__init__()
         assert basis_gate.num_qubits == 2, "Basis gate must be a 2Q gate."
         self.requires = [Collect2qBlocks(), ConsolidateBlocks(force_consolidate=True)]
         self.basis_gate = basis_gate
-        self.chatty = False
-        self.coverage_set = self._gate_set_to_coverage()
+        self.chatty = True
+        # Use the basis_gate as a key for the cache
+        basis_gate_key = str(self.basis_gate)
+        if basis_gate_key in MonodromyDepth._coverage_cache:
+            self.coverage_set = MonodromyDepth._coverage_cache[basis_gate_key]
+        else:
+            self.coverage_set = self._gate_set_to_coverage()
+            MonodromyDepth._coverage_cache[basis_gate_key] = self.coverage_set
+
     
     def _operation_to_circuit_polytope(self, operation: Instruction) -> CircuitPolytope:
         """
@@ -71,6 +76,7 @@ class MonodromyDepth(AnalysisPass):
             convex_subpolytopes=convex_polytope.convex_subpolytopes,
         )
     
+    @lru_cache(maxsize=None)
     def _gate_set_to_coverage(self):
         """
         The gate_set_to_coverage() function takes the basis gate and creates a CircuitPolytope object 
