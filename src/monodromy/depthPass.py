@@ -118,6 +118,8 @@ class MonodromyDepth(AnalysisPass):
             target_node = dag._multi_graph[node]
             if not isinstance(target_node, DAGOpNode):
                 return 0
+            elif target_node.op.name in ["barrier", "measure"]:
+                return 0
             elif len(target_node.qargs) == 1:
                 return 0
             elif len(target_node.qargs) > 2:
