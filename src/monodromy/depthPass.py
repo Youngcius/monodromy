@@ -118,6 +118,10 @@ class MonodromyDepth(AnalysisPass):
             target_node = dag._multi_graph[node]
             if not isinstance(target_node, DAGOpNode):
                 return 0
+            elif len(target_node.qargs) == 1:
+                return 0
+            elif len(target_node.qargs) > 2:
+                raise TranspilerError("Operation not supported.")
             else:
                 return self._operation_to_cost(target_node.op)
         
