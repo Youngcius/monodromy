@@ -12,6 +12,7 @@ from qiskit.dagcircuit import DAGCircuit, DAGOpNode
 from qiskit.transpiler.passes import Collect2qBlocks, ConsolidateBlocks
 import retworkx
 from functools import lru_cache
+from qiskit.quantum_info import Operator
 
 
 class MonodromyDepth(AnalysisPass):
@@ -104,7 +105,10 @@ class MonodromyDepth(AnalysisPass):
         return sorted_polytopes
 
     def _operation_to_cost(self, operation: Instruction) -> int:
-        target_coords = unitary_to_monodromy_coordinate(operation.to_matrix())
+        try:
+            target_coords = unitary_to_monodromy_coordinate(operation.to_matrix())
+        except AttributeError:
+            target_coords = unitary_to_monodromy_coordinate(Operator(operation).data)
         for i, circuit_polytope in enumerate(self.coverage_set):
             if circuit_polytope.has_element(target_coords):
                 return i
