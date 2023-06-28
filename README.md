@@ -5,6 +5,7 @@ Computations in the monodromy polytope for quantum gate sets.
 ## Fork
 
 #### This fork is focused on wrapping functions to be more easily integrated with Qiskit circuits.
+
 Change log:
 
 1. Modification to python packing, for ease of use.
@@ -13,7 +14,7 @@ Change log:
 3. Simple utilities for easier gate Haar scores, coverage set building/plotting
 4. CircuitPolytopes now include instruction data instead of just operation strings
 
-____
+---
 
 Simple function for gate Haar scores:
 
@@ -114,7 +115,6 @@ Monodromy depth: 7.0
 ```
 
 In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepth` with `CXGate` as the basis gate. The PassManager `pm` runs the circuit, and the computed depth is compared against an expected value. Confirms that using this pass is key to recognizing the changing cost of depth post-decomposition.
----
 
 ## Overview
 

@@ -95,6 +95,10 @@ def gates_to_coverage(*gates:Instruction, costs=None, sort = False) -> List[Circ
 
     return coverage_set
 
+
+# TODO: here can implement approximate decomposition, e.g. instead of satisfying has_element,
+# the target gate just needs to be sufficiently close to the polytope.
+# find the point in the polytope that minimizes the distance -> maximizes fidelity.
 def coverage_lookup_operation(coverage_set:List[CircuitPolytope], target: Instruction) -> Tuple[float, List]:
     """Calculates the cost of an operation
     
