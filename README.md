@@ -86,7 +86,7 @@ In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepth` 
 #### Change log:
 
 1. Modification to python packing, for ease of use.
-2. WIP: Developing the combination of consolidation and depth analysis into a Qiskit AnalysisPass.
+2. Created a combined consolidation and depth analysis into a Qiskit AnalysisPass.
    The original work was conducted in the [Pitt-JonesLab/slam_decomposition](https://github.com/Pitt-JonesLab/slam_decomposition) repository. This repository is a cleaner, more focused implementation of the key ideas, avoiding the complexities found in the original [polytope_wrap.py](https://github.com/Pitt-JonesLab/slam_decomposition/blob/main/src/slam/utils/polytopes/polytope_wrap.py) file.
 3. Simple utilities for easier gate Haar scores and coverage plotting
 
