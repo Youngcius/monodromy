@@ -94,7 +94,7 @@ def gates_to_coverage_plot(*gates:Instruction, costs=None, overlap=False):
         gate (Instruction): a gate.
         overlap (bool): If True, all polytopes are drawn on the same plot. If False, each polytope is drawn in a separate subplot.
     """
-    coverage_set = gates_to_coverage(*gates, costs=costs)
+    coverage_set = gates_to_coverage(*gates, costs=costs, sort=True)
     _plot_coverage_set(coverage_set, overlap=overlap)
     return coverage_set
 
