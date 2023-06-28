@@ -1,8 +1,9 @@
 # `monodromy`
 
-Computations in the monodromy polytope for quantum gate sets. 
+Computations in the monodromy polytope for quantum gate sets.
 
 ## Fork
+
 #### This fork is focused on wrapping functions to be more easily integrated with Qiskit circuits.
 
 Simple function for gate Haar scores:
@@ -24,16 +25,36 @@ from monodromy.render import gates_to_coverage_plot
 gates_to_coverage_plot(iSwapGate().power(1/2), overlap=False)
 ```
 
-![Alt text](images/image.png)
+![monodromy coverage 1](images/image.png)
+
+Example with overcomplete basis set:
+
+```python
+U = iSwapGate().power(1 / 2)
+U2 = iSwapGate().power(1 / 4)
+coverage_ = gates_to_coverage_plot(U, U2, costs=[0.5, 0.25])
+```
+
+![monodromy coverage 2](images/image2.png)
+
+Previously, `CircuitPolytopes` only tracked strings for operation names. Modification tracks the actual `Instruction` objects, allowing for coverage set lookup to return parameterized quantum circuits for decomposition purposes.
+
+```python
+target = UnitaryGate(canonical_gate(0.5, 0.25, 0.25))
+target_build_ansatz(coverage_set=coverage_1, target=target).draw('mpl')
+```
+
+![decomposition ansatz](images/image3.png)
 
 Other helpful functions:
+
 ```python
 from monodromy.coverage import gates_to_coverage, coverage_lookup_operation
 gates_to_coverage(*gates:Instruction, costs=None, sort = False) -> List[CircuitPolytope]
 coverage_lookup_operation(coverage_set:List[CircuitPolytope], target: Instruction) -> (float, List)
 ```
 
-___
+---
 
 A helpful transpiler subroutin implemented as a Qiskit `AnalysisPass` named MonodromyDepth located in [monodromy/depthPass.py](monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition.
 
@@ -70,15 +91,15 @@ print(f"Monodromy depth: {pm.property_set['monodromy_depth']}")
 assert pm.property_set["monodromy_depth"] == expected_value, "Monodromy depth not calculated correctly!"
 ```
 
-```bash            
+```bash
 q_0: ─X───■────────X─
-      │ ┌─┴─┐      │ 
+      │ ┌─┴─┐      │
 q_1: ─X─┤ X ├──■───X─
-        └───┘┌─┴─┐   
+        └───┘┌─┴─┐
 q_2: ────────┤ X ├───
-             └───┘   
+             └───┘
 q_3: ────────────────
-                     
+
 Depth: 4
 Monodromy depth: 7.0
 ```

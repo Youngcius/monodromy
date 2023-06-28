@@ -6,6 +6,7 @@ Bare dataclasses which house polytope information.
 
 from dataclasses import dataclass, field
 from typing import List
+from qiskit.circuit import Instruction
 
 
 anonymous_convex_polytope_counter = 0
@@ -77,3 +78,4 @@ class CircuitPolytopeData(PolytopeData):
     """
     cost: float
     operations: List[str]
+    instructions: List[Instruction]

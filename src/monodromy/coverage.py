@@ -22,6 +22,7 @@ from .io.base import CircuitPolytopeData
 from .polytopes import Polytope, trim_polytope_set
 from .static.examples import everything_polytope, identity_polytope
 from .static.qlr_table import qlr_polytope
+from qiskit.circuit import Parameter, QuantumCircuit
 
 @dataclass
 class CircuitPolytope(Polytope, CircuitPolytopeData):
@@ -71,6 +72,7 @@ def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPol
 
         return CircuitPolytope(
             operations=[operation.name],
+            instructions=[operation],
             cost=cost,
             convex_subpolytopes=convex_polytope.convex_subpolytopes,
         )
@@ -112,10 +114,36 @@ def coverage_lookup_operation(coverage_set:List[CircuitPolytope], target: Instru
     # iterate through coverage set, sorted by cost
     for circuit_polytope in coverage_set:
         if circuit_polytope.has_element(target_coords):
-            return circuit_polytope.cost, circuit_polytope.operations
+            return circuit_polytope.cost, circuit_polytope.instructions
         
     raise TranspilerError("Operation not found in coverage set.")
 
+def target_build_ansatz(coverage_set:List[CircuitPolytope], target: Instruction) -> QuantumCircuit:
+    """Builds a decomposition ansatz given a target operation
+    
+    Args:
+        coverage_set (List[CircuitPolytope]): The coverage set to search
+        target (Instruction): The operation to find the cost of
+    Returns:
+        QuantumCircuit: The ansatz circuit
+    """
+
+    ops = coverage_lookup_operation(coverage_set=coverage_set, target=target)[1]
+    ansatz = QuantumCircuit(2)
+
+    # Begin with an empty operation to align the ops list with parameterized gates
+    ops = [None] + ops
+
+    for i, op in enumerate(ops):
+        if op is not None:
+            ansatz.append(op, [0, 1])
+
+        # Apply parameterized 1Q u gates
+        ansatz.u(Parameter(rf"$\theta_{2*i}$"), Parameter(rf"$\phi_{2*i}$"), Parameter(rf"$\lambda_{2*i}$"), 0)
+        ansatz.u(Parameter(rf"$\theta_{2*i+1}$"), Parameter(rf"$\phi_{2*i+1}$"), Parameter(rf"$\lambda_{2*i+1}$"), 1)
+    
+    return ansatz
+        
 def deduce_qlr_consequences(
         target: str,
         a_polytope: Polytope,
@@ -230,6 +258,7 @@ def build_coverage_set(
     total_polytope = CircuitPolytope(
         convex_subpolytopes=identity_polytope.convex_subpolytopes,
         operations=[],
+        instructions = [],
         cost=0.,
     )
     necessary_polytopes = [total_polytope]
@@ -288,6 +317,7 @@ def build_coverage_set(
         # specialize it from a Polytope to a CircuitPolytope
         new_polytope = CircuitPolytope(
             operations=next_polytope.operations,
+            instructions=next_polytope.instructions,
             cost=next_polytope.cost,
             convex_subpolytopes=new_polytope.convex_subpolytopes
         )
@@ -309,6 +339,7 @@ def build_coverage_set(
             for operation in operations:
                 heapq.heappush(to_be_explored, CircuitPolytope(
                     operations=next_polytope.operations + operation.operations,
+                    instructions=next_polytope.instructions + operation.instructions,
                     cost=next_polytope.cost + operation.cost,
                     convex_subpolytopes=operation.convex_subpolytopes,
                 ))
