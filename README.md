@@ -5,6 +5,15 @@ Computations in the monodromy polytope for quantum gate sets.
 ## Fork
 
 #### This fork is focused on wrapping functions to be more easily integrated with Qiskit circuits.
+Change log:
+
+1. Modification to python packing, for ease of use.
+2. Created a combined consolidation and depth analysis into a Qiskit AnalysisPass.
+   The original work was conducted in the [Pitt-JonesLab/slam_decomposition](https://github.com/Pitt-JonesLab/slam_decomposition) repository. This repository is a cleaner, more focused implementation of the key ideas, avoiding the complexities found in the original [polytope_wrap.py](https://github.com/Pitt-JonesLab/slam_decomposition/blob/main/src/slam/utils/polytopes/polytope_wrap.py) file.
+3. Simple utilities for easier gate Haar scores, coverage set building/plotting
+4. CircuitPolytopes now include instruction data instead of just operation strings
+
+____
 
 Simple function for gate Haar scores:
 
@@ -56,7 +65,7 @@ coverage_lookup_operation(coverage_set:List[CircuitPolytope], target: Instructio
 
 ---
 
-A helpful transpiler subroutin implemented as a Qiskit `AnalysisPass` named MonodromyDepth located in [monodromy/depthPass.py](monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition.
+A helpful transpiler subroutine implemented as a Qiskit `AnalysisPass` named MonodromyDepth located in [monodromy/depthPass.py](monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition.
 
 The implemented procedure, given a set of basis gates, performs the following steps:
 
@@ -105,15 +114,6 @@ Monodromy depth: 7.0
 ```
 
 In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepth` with `CXGate` as the basis gate. The PassManager `pm` runs the circuit, and the computed depth is compared against an expected value. Confirms that using this pass is key to recognizing the changing cost of depth post-decomposition.
-
-#### Change log:
-
-1. Modification to python packing, for ease of use.
-2. Created a combined consolidation and depth analysis into a Qiskit AnalysisPass.
-   The original work was conducted in the [Pitt-JonesLab/slam_decomposition](https://github.com/Pitt-JonesLab/slam_decomposition) repository. This repository is a cleaner, more focused implementation of the key ideas, avoiding the complexities found in the original [polytope_wrap.py](https://github.com/Pitt-JonesLab/slam_decomposition/blob/main/src/slam/utils/polytopes/polytope_wrap.py) file.
-3. Simple utilities for easier gate Haar scores, coverage set building/plotting
-4. CircuitPolytopes now include instruction data instead of just operation strings
-
 ---
 
 ## Overview
