@@ -19,9 +19,8 @@ print(haar_score(iSwapGate().power(1/2))) #2.2098826363156774
 Plotting coverage volumes:
 
 ```python
-from monodromy.render import plot_coverage_set
-coverage_set = gate_to_coverage(iSwapGate().power(1/2))
-plot_coverage_set(coverage_set, overlap=False)
+from monodromy.render import gate_to_coverage_plot
+gate_to_coverage_plot(iSwapGate().power(1/2), overlap=False)
 ```
 
 ![Alt text](images/image.png)

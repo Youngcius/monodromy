@@ -14,6 +14,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 from weylchamber import WeylChamber
 import scipy.spatial as ss
+from qiskit.circuit import Instruction
+from monodromy.haar import gate_to_coverage
 
 def _plot_polytope(circuit_polytope, w, color='red'):
     polytope_vertices = monodromy_to_positive_canonical_polytope(circuit_polytope).reduce().vertices
@@ -39,7 +41,7 @@ def _plot_polytope(circuit_polytope, w, color='red'):
         faces.set_edgecolor('k')
         w.ax.add_collection3d(faces)
 
-def plot_coverage_set(coverage_set, overlap=True):
+def _plot_coverage_set(coverage_set, overlap=True):
     """Plot a set of 3D polytopes.
     
     Args:
@@ -66,6 +68,16 @@ def plot_coverage_set(coverage_set, overlap=True):
             _plot_polytope(coverage_set[i], color=colors[i % len(colors)], w=w)
 
     plt.show()
+
+def gate_to_coverage_plot(gate:Instruction, overlap=True):
+    """Plot the coverage set of a gate.
+    
+    Args:
+        gate (Instruction): a gate.
+        overlap (bool): If True, all polytopes are drawn on the same plot. If False, each polytope is drawn in a separate subplot.
+    """
+    coverage_set = gate_to_coverage(gate)
+    _plot_coverage_set(coverage_set, overlap=overlap)
 
 def polytopes_to_mathematica(necessary_polytopes: List[CircuitPolytope]):
     output = ""
