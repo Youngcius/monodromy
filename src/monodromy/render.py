@@ -27,7 +27,7 @@ def _plot_polytope(circuit_polytope, w, color='red'):
     # delete duplicates that might exist
     polytope_vertices = np.unique(polytope_vertices, axis=0)
 
-    if len(polytope_vertices) == 1:
+    if len(polytope_vertices) < 3:
         w.ax.scatter3D(*zip(*polytope_vertices), color=color)
     else:
         # TODO use Qbk:0Bk:0 - drop dimension k from the input points
