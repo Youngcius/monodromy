@@ -8,7 +8,7 @@ cost circuits whose union covers the entire monodromy polytope.
 import heapq
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from monodromy.coordinates import unitary_to_monodromy_coordinate
 from monodromy.static.examples import exactly
@@ -93,7 +93,7 @@ def gates_to_coverage(*gates:Instruction, costs=None, sort = False) -> List[Circ
 
     return coverage_set
 
-def coverage_lookup_operation(coverage_set:List[CircuitPolytope], target: Instruction) -> (float, List):
+def coverage_lookup_operation(coverage_set:List[CircuitPolytope], target: Instruction) -> Tuple[float, List]:
     """Calculates the cost of an operation
     
     Finds the cost of an operation by iterating through the coverage set, sorted by cost.
@@ -309,7 +309,7 @@ def build_coverage_set(
             for operation in operations:
                 heapq.heappush(to_be_explored, CircuitPolytope(
                     operations=next_polytope.operations + operation.operations,
-                    cost=next_polytope.cost + operation.cost + single_qubit_cost,
+                    cost=next_polytope.cost + operation.cost,
                     convex_subpolytopes=operation.convex_subpolytopes,
                 ))
         else:
