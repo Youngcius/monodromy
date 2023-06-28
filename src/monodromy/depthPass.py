@@ -46,7 +46,7 @@ class MonodromyDepth(AnalysisPass):
             MonodromyDepth._coverage_cache[basis_gate_key] = self.coverage_set
 
     @staticmethod
-    def _operation_to_circuit_polytope(operation: Instruction) -> CircuitPolytope:
+    def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPolytope:
         """
         The operation_to_circuit_polytope() function takes a qiskit.Instruction object and returns a 
         CircuitPolytope object that represents the unitary of the operation.
@@ -73,7 +73,7 @@ class MonodromyDepth(AnalysisPass):
 
         return CircuitPolytope(
             operations=[operation.name],
-            cost=1,
+            cost=cost,
             convex_subpolytopes=convex_polytope.convex_subpolytopes,
         )
     

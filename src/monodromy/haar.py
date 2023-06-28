@@ -20,15 +20,19 @@ from qiskit.circuit import Instruction
 from monodromy.depthPass import MonodromyDepth
 from monodromy.coverage import build_coverage_set
 
-def gate_to_haar(gate:Instruction):
+def gate_to_haar(*gates:Instruction):
     """Calculates the Haar score of a gate"""
-    return expected_cost(gate_to_coverage(gate))
+    return expected_cost(gate_to_coverage(*gates))
 
-def gate_to_coverage(gate:Instruction):
+def gate_to_coverage(*gates:Instruction):
     """Calculates the coverage of a gate"""
-    assert gate.num_qubits == 2, "Basis gate must be a 2Q gate."
+    for gate in gates:
+        assert gate.num_qubits == 2, "Basis gate must be a 2Q gate."
     # convert gate to coverage
-    operations = [MonodromyDepth._operation_to_circuit_polytope(gate)]
+    
+    # costs for all gates are 1, except SWAP which is 0
+    costs = [1 if gate.name != "swap" else 0 for gate in gates]
+    operations = [MonodromyDepth._operation_to_circuit_polytope(gate, cost=c) for gate, c in zip(gates,costs)]
     coverage_set = build_coverage_set(operations)
     # calculate Haar score
     return coverage_set
