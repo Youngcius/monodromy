@@ -66,7 +66,7 @@ coverage_lookup_operation(coverage_set:List[CircuitPolytope], target: Instructio
 
 ---
 
-A helpful transpiler subroutine implemented as a Qiskit `AnalysisPass` named MonodromyDepth located in [monodromy/depthPass.py](monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition.
+A helpful transpiler subroutine implemented as a Qiskit `AnalysisPass` named MonodromyDepth located in [monodromy/depthPass.py](src/monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition.
 
 The implemented procedure, given a set of basis gates, performs the following steps:
 
