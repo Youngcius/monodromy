@@ -21,26 +21,23 @@ def _plot_polytope(circuit_polytope, w, color='red'):
     polytope_vertices = monodromy_to_positive_canonical_polytope(circuit_polytope).reduce().vertices
     polytope_vertices = np.array([[float(b) for b in a] for a in polytope_vertices[0]])
 
-    # seems that if (0,0,0) is included we need to manually add (1,0,0) [both are identity]
-    if np.any(np.all(polytope_vertices == [0,0,0], axis=1)):
-        polytope_vertices = np.append(polytope_vertices, [(1,0,0)], axis=0)
+    # we seem to have issue with symmetries, my fix is to add adjoints manually
+    # this is a symmetry over the x-axis we can compute by adding (1-x, y, z) to the coordinate lists
+    polytope_vertices = np.concatenate((polytope_vertices, np.array([[1 - a[0], a[1], a[2]] for a in polytope_vertices])))
+    # delete duplicates that might exist
+    polytope_vertices = np.unique(polytope_vertices, axis=0)
 
     if len(polytope_vertices) == 1:
         w.ax.scatter3D(*zip(*polytope_vertices), color=color)
-    elif len(polytope_vertices) == 3:
-        triangle = Poly3DCollection([polytope_vertices])
-        triangle.set_facecolor(color)
-        triangle.set_edgecolor('k')
-        triangle.set_alpha(0.5)
-        w.ax.add_collection3d(triangle)
-    elif len(polytope_vertices) > 3:
-        hull = ss.ConvexHull(polytope_vertices)
+    else:
+        # TODO use Qbk:0Bk:0 - drop dimension k from the input points
+        hull = ss.ConvexHull(polytope_vertices, qhull_options='QJ')
         faces = Poly3DCollection([polytope_vertices[simplex] for simplex in hull.simplices])
         faces.set_facecolor(color)
         faces.set_alpha(0.2)
         faces.set_edgecolor('k')
         w.ax.add_collection3d(faces)
-
+   
 def _plot_coverage_set(coverage_set, overlap=True):
     """Plot a set of 3D polytopes.
     
