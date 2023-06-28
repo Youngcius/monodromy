@@ -45,8 +45,8 @@ class MonodromyDepth(AnalysisPass):
             self.coverage_set = self._gate_set_to_coverage()
             MonodromyDepth._coverage_cache[basis_gate_key] = self.coverage_set
 
-    
-    def _operation_to_circuit_polytope(self, operation: Instruction) -> CircuitPolytope:
+    @staticmethod
+    def _operation_to_circuit_polytope(operation: Instruction) -> CircuitPolytope:
         """
         The operation_to_circuit_polytope() function takes a qiskit.Instruction object and returns a 
         CircuitPolytope object that represents the unitary of the operation.
@@ -91,7 +91,7 @@ class MonodromyDepth(AnalysisPass):
 
         # TODO, here could add functionality for multiple basis gates
         # just need to fix the cost function to account for relative durations
-        operations = [self._operation_to_circuit_polytope(self.basis_gate)]
+        operations = [MonodromyDepth._operation_to_circuit_polytope(self.basis_gate)]
         coverage_set = build_coverage_set(operations, chatty=self.chatty)
 
         # TODO: add some warning or fail condition if the coverage set fails to coverage

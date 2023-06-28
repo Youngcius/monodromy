@@ -16,7 +16,18 @@ from .polynomials import Polynomial, TrigPolynomial
 from .polytopes import alternating_sum, make_convex_polytope
 from .static.examples import empty_polytope
 from .utilities import epsilon
+from qiskit.circuit import Instruction
+from monodromy.depthPass import MonodromyDepth
+from monodromy.coverage import build_coverage_set
 
+def haar_score(gate:Instruction):
+    """Calculates the Haar score of a gate"""
+    assert gate.num_qubits == 2, "Basis gate must be a 2Q gate."
+    # convert gate to coverage
+    operations = [MonodromyDepth._operation_to_circuit_polytope(gate)]
+    coverage_set = build_coverage_set(operations)
+    # calculate Haar score
+    return expected_cost(coverage_set)
 
 # duck typing means poor dispatching...
 def _haar_volume_tetrahedron(tetrahedron, integrand=None):
