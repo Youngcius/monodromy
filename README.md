@@ -32,7 +32,7 @@ Example with overcomplete basis set:
 ```python
 U = iSwapGate().power(1 / 2)
 U2 = iSwapGate().power(1 / 4)
-coverage_ = gates_to_coverage_plot(U, U2, costs=[0.5, 0.25])
+coverage = gates_to_coverage_plot(U, U2, costs=[0.5, 0.25])
 ```
 
 ![monodromy coverage 2](images/image2.png)
@@ -41,7 +41,7 @@ Previously, `CircuitPolytopes` only tracked strings for operation names. Modific
 
 ```python
 target = UnitaryGate(canonical_gate(0.5, 0.25, 0.25))
-target_build_ansatz(coverage_set=coverage_1, target=target).draw('mpl')
+target_build_ansatz(coverage_set=coverage, target=target).draw('mpl')
 ```
 
 ![decomposition ansatz](images/image3.png)
