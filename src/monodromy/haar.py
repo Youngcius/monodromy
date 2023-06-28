@@ -20,14 +20,18 @@ from qiskit.circuit import Instruction
 from monodromy.depthPass import MonodromyDepth
 from monodromy.coverage import build_coverage_set
 
-def haar_score(gate:Instruction):
+def gate_to_haar(gate:Instruction):
     """Calculates the Haar score of a gate"""
+    return expected_cost(gate_to_coverage(gate))
+
+def gate_to_coverage(gate:Instruction):
+    """Calculates the coverage of a gate"""
     assert gate.num_qubits == 2, "Basis gate must be a 2Q gate."
     # convert gate to coverage
     operations = [MonodromyDepth._operation_to_circuit_polytope(gate)]
     coverage_set = build_coverage_set(operations)
     # calculate Haar score
-    return expected_cost(coverage_set)
+    return coverage_set
 
 # duck typing means poor dispatching...
 def _haar_volume_tetrahedron(tetrahedron, integrand=None):
