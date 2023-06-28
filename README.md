@@ -5,6 +5,7 @@ Computations in the monodromy polytope for quantum gate sets
 ## Fork Updates
 
 Simple function for gate Haar scores:
+
 ```python
 from monodromy.haar import haar_score
 from qiskit.circuit.library import CXGate, iSwapGate
@@ -14,6 +15,16 @@ print(haar_score(CXGate().power(1/2))) #3.540254820808027
 print(haar_score(iSwapGate())) #3.000000000000001
 print(haar_score(iSwapGate().power(1/2))) #2.2098826363156774
 ```
+
+Plotting coverage volumes:
+
+```python
+from monodromy.render import plot_coverage_set
+coverage_set = gate_to_coverage(iSwapGate().power(1/2))
+plot_coverage_set(coverage_set, overlap=False)
+```
+
+![Alt text](images/image.png)
 
 This fork introduces a Qiskit `AnalysisPass` named MonodromyDepth located in [monodromy/depthPass.py](monodromy/depthPass.py), designed to determine the depth (or cost) of a quantum circuit without the need for explicit decomposition. The primary use case for this tool is as a subroutine in various transpiler passes.
 
@@ -79,6 +90,7 @@ In this example, the QuantumCircuit `qc` is analyzed using the `MonodromyDepth` 
 2. WIP: Developing the combination of consolidation and depth analysis into a Qiskit AnalysisPass.
    The original work was conducted in the [Pitt-JonesLab/slam_decomposition](https://github.com/Pitt-JonesLab/slam_decomposition) repository. This repository is a cleaner, more focused implementation of the key ideas, avoiding the complexities found in the original [polytope_wrap.py](https://github.com/Pitt-JonesLab/slam_decomposition/blob/main/src/slam/utils/polytopes/polytope_wrap.py) file.
 3. Simple utility for gate Haar scores
+
 ---
 
 ## Overview
