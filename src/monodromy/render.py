@@ -29,6 +29,12 @@ def _plot_polytope(circuit_polytope, w, color='red'):
 
     if len(polytope_vertices) < 3:
         w.ax.scatter3D(*zip(*polytope_vertices), color=color)
+    elif len(polytope_vertices) == 3:
+        triangle = Poly3DCollection([polytope_vertices])
+        triangle.set_facecolor(color)
+        triangle.set_edgecolor('k')
+        triangle.set_alpha(0.5)
+        w.ax.add_collection3d(triangle)
     else:
         # TODO use Qbk:0Bk:0 - drop dimension k from the input points
         hull = ss.ConvexHull(polytope_vertices, qhull_options='QJ')
@@ -46,23 +52,37 @@ def _plot_coverage_set(coverage_set, overlap=True):
         overlap (bool): If True, all polytopes are drawn on the same plot. If False, each polytope is drawn in a separate subplot.
     """
     colors = ['red', 'green', 'blue', 'orange', 'purple', 'cyan', 'black', 'pink', 'brown', 'grey']
-    coverage_set = coverage_set[1:] # remove the identity
-
+    
+    # Preprocess coverage_set to organize CircuitPolytope objects based on their cost
+    organized_set = {}
+    for circuit_polytope in coverage_set:
+        cost = int(circuit_polytope.cost)  # Convert cost to integer
+        if cost == 0:
+            continue
+        if cost not in organized_set:
+            organized_set[cost] = []
+        organized_set[cost].append(circuit_polytope)
+    
     if overlap:
         fig, ax = plt.subplots(1, 1, subplot_kw={'projection':'3d'})
         w = WeylChamber()
         w.labels = {}
         w.render(ax)
-        for i, circuit_polytope in enumerate(coverage_set):
-            _plot_polytope(circuit_polytope, color=colors[i % len(colors)], w=w)
+        for cost, polytopes in organized_set.items():
+            color = colors[cost % len(colors)]
+            for circuit_polytope in polytopes:
+                _plot_polytope(circuit_polytope, color=color, w=w)
     else:
-        n = len(coverage_set)
+        n = len(organized_set)
         fig, axs = plt.subplots(1, n, subplot_kw={'projection':'3d'}, figsize=(n*5, 5))  # Adjust size to avoid crowding
-        for i, ax in enumerate(axs):
+        for i, (cost, polytopes) in enumerate(organized_set.items()):
+            ax = axs[i] if n > 1 else axs
             w = WeylChamber()
             w.labels = {}
             w.render(ax)
-            _plot_polytope(coverage_set[i], color=colors[i % len(colors)], w=w)
+            color = colors[cost % len(colors)]
+            for circuit_polytope in polytopes:
+                _plot_polytope(circuit_polytope, color=color, w=w)
 
     plt.show()
 
