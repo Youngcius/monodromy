@@ -46,7 +46,7 @@ class CircuitPolytope(Polytope, CircuitPolytopeData):
                (self.cost == other.cost and self.volume <= other.volume)
 
 
-def operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPolytope:
+def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPolytope:
         """
         The operation_to_circuit_polytope() function takes a qiskit.Instruction object and returns a 
         CircuitPolytope object that represents the unitary of the operation.
@@ -77,16 +77,15 @@ def operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPoly
 
 
 def gates_to_coverage(*gates:Instruction, costs=None, sort = False) -> List[CircuitPolytope]:
-    """Calculates the coverage of a gate"""
+    """Calculates coverage given a basis gate set"""
     for gate in gates:
         assert gate.num_qubits == 2, "Basis gate must be a 2Q gate."
-    # convert gate to coverage
     
-    # costs for all gates are 1, except SWAP which is 0
+    # default costs for all gates are 1, except SWAP which is 0 (virtual-SWAP)
     if costs is None:
         costs = [1 if gate.name != "swap" else 0 for gate in gates]
 
-    operations = [operation_to_circuit_polytope(gate, cost=c) for gate, c in zip(gates, costs)]
+    operations = [_operation_to_circuit_polytope(gate, cost=c) for gate, c in zip(gates, costs)]
     coverage_set = build_coverage_set(operations, single_qubit_cost=0.0)
     
     if sort:

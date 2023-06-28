@@ -72,7 +72,9 @@ class MonodromyDepth(AnalysisPass):
         :param dag: The CircuitDAG to be analyzed.
         :return: An updated CircuitDAG.
         """
-        def weight_fn(_1, node, _2):
+        SCALE_FACTOR = 1000  # scale factor to convert floats to integers
+
+        def weight_fn(_1, node, _2) -> int:
             """Weight function for longest path algorithm"""
             target_node = dag._multi_graph[node]
             if not isinstance(target_node, DAGOpNode):
@@ -84,9 +86,13 @@ class MonodromyDepth(AnalysisPass):
             elif len(target_node.qargs) > 2:
                 raise TranspilerError("Operation not supported.")
             else:
-                return coverage_lookup_operation(self.coverage_set, target_node.op)[0]
+                float_cost = coverage_lookup_operation(self.coverage_set, target_node.op)[0]
+                return int(float_cost * SCALE_FACTOR)
         
         longest_path_length = retworkx.dag_longest_path_length(dag._multi_graph, weight_fn=weight_fn)
+        # convert back to float
+        longest_path_length /= SCALE_FACTOR
+        
         if self.chatty:
             logging.info(f"Longest path length: {longest_path_length}")
         
