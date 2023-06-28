@@ -15,7 +15,7 @@ import numpy as np
 from weylchamber import WeylChamber
 import scipy.spatial as ss
 from qiskit.circuit import Instruction
-from monodromy.haar import gate_to_coverage
+from monodromy.haar import gates_to_coverage
 
 def _plot_polytope(circuit_polytope, w, color='red'):
     polytope_vertices = monodromy_to_positive_canonical_polytope(circuit_polytope).reduce().vertices
@@ -44,7 +44,7 @@ def _plot_polytope(circuit_polytope, w, color='red'):
         faces.set_edgecolor('k')
         w.ax.add_collection3d(faces)
    
-def _plot_coverage_set(coverage_set, overlap=True):
+def _plot_coverage_set(coverage_set, overlap=False):
     """Plot a set of 3D polytopes.
     
     Args:
@@ -56,7 +56,7 @@ def _plot_coverage_set(coverage_set, overlap=True):
     # Preprocess coverage_set to organize CircuitPolytope objects based on their cost
     organized_set = {}
     for circuit_polytope in coverage_set:
-        cost = int(circuit_polytope.cost)  # Convert cost to integer
+        cost = circuit_polytope.cost
         if cost == 0:
             continue
         if cost not in organized_set:
@@ -68,8 +68,8 @@ def _plot_coverage_set(coverage_set, overlap=True):
         w = WeylChamber()
         w.labels = {}
         w.render(ax)
-        for cost, polytopes in organized_set.items():
-            color = colors[cost % len(colors)]
+        for i, (cost, polytopes) in enumerate(organized_set.items()):
+            color = colors[i % len(colors)]
             for circuit_polytope in polytopes:
                 _plot_polytope(circuit_polytope, color=color, w=w)
     else:
@@ -80,21 +80,23 @@ def _plot_coverage_set(coverage_set, overlap=True):
             w = WeylChamber()
             w.labels = {}
             w.render(ax)
-            color = colors[cost % len(colors)]
+            color = colors[i % len(colors)]
             for circuit_polytope in polytopes:
                 _plot_polytope(circuit_polytope, color=color, w=w)
+            w.ax.set_title(f"Cost: {cost}")
 
     plt.show()
 
-def gate_to_coverage_plot(gate:Instruction, overlap=True):
+def gates_to_coverage_plot(*gates:Instruction, costs=None, overlap=False):
     """Plot the coverage set of a gate.
     
     Args:
         gate (Instruction): a gate.
         overlap (bool): If True, all polytopes are drawn on the same plot. If False, each polytope is drawn in a separate subplot.
     """
-    coverage_set = gate_to_coverage(gate)
+    coverage_set = gates_to_coverage(*gates, costs=costs)
     _plot_coverage_set(coverage_set, overlap=overlap)
+    return coverage_set
 
 def polytopes_to_mathematica(necessary_polytopes: List[CircuitPolytope]):
     output = ""

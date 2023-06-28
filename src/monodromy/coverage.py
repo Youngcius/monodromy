@@ -5,18 +5,23 @@ Routines for converting a family of native gates to a minimal set of minimum-
 cost circuits whose union covers the entire monodromy polytope.
 """
 
+import heapq
 from dataclasses import dataclass
 from fractions import Fraction
-import heapq
 from typing import Dict, List, Optional
 
+from monodromy.coordinates import unitary_to_monodromy_coordinate
+from monodromy.static.examples import exactly
+from qiskit.quantum_info import Operator
+from qiskit.circuit import Instruction
+from qiskit.transpiler.exceptions import TranspilerError
+
 from .coordinates import monodromy_alcove, monodromy_alcove_c2, rho_reflect
-from .io.base import CircuitPolytopeData
 from .elimination import cylinderize, project
+from .io.base import CircuitPolytopeData
 from .polytopes import Polytope, trim_polytope_set
 from .static.examples import everything_polytope, identity_polytope
 from .static.qlr_table import qlr_polytope
-
 
 @dataclass
 class CircuitPolytope(Polytope, CircuitPolytopeData):
@@ -40,6 +45,77 @@ class CircuitPolytope(Polytope, CircuitPolytopeData):
         return (self.cost < other.cost) or \
                (self.cost == other.cost and self.volume <= other.volume)
 
+
+def operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPolytope:
+        """
+        The operation_to_circuit_polytope() function takes a qiskit.Instruction object and returns a 
+        CircuitPolytope object that represents the unitary of the operation.
+
+        :param operation: A qiskit.Instruction object.
+        :return: A CircuitPolytope object
+        """
+
+        gd = operation.to_matrix()
+        b_polytope = exactly(
+            *(
+                Fraction(x).limit_denominator(10_000)
+                for x in unitary_to_monodromy_coordinate(gd)[:-1]
+            )
+        )
+        convex_polytope = deduce_qlr_consequences(
+            target="c",
+            a_polytope=identity_polytope,
+            b_polytope=b_polytope,
+            c_polytope=everything_polytope,
+        )
+
+        return CircuitPolytope(
+            operations=[operation.name],
+            cost=cost,
+            convex_subpolytopes=convex_polytope.convex_subpolytopes,
+        )
+
+
+def gates_to_coverage(*gates:Instruction, costs=None, sort = False) -> List[CircuitPolytope]:
+    """Calculates the coverage of a gate"""
+    for gate in gates:
+        assert gate.num_qubits == 2, "Basis gate must be a 2Q gate."
+    # convert gate to coverage
+    
+    # costs for all gates are 1, except SWAP which is 0
+    if costs is None:
+        costs = [1 if gate.name != "swap" else 0 for gate in gates]
+
+    operations = [operation_to_circuit_polytope(gate, cost=c) for gate, c in zip(gates, costs)]
+    coverage_set = build_coverage_set(operations, single_qubit_cost=0.0)
+    
+    if sort:
+        return sorted(coverage_set, key=lambda k: k.cost)
+
+    return coverage_set
+
+def coverage_lookup_operation(coverage_set:List[CircuitPolytope], target: Instruction) -> (float, List):
+    """Calculates the cost of an operation
+    
+    Finds the cost of an operation by iterating through the coverage set, sorted by cost.
+    Args:
+        coverage_set (List[CircuitPolytope]): The coverage set to search
+        target (Instruction): The operation to find the cost of
+    Returns:
+        (float, List): The cost of the operation and the list of operations that make up the circuit
+    """
+    # convert gate to monodromy coordinate
+    try:
+        target_coords = unitary_to_monodromy_coordinate(target.to_matrix())
+    except AttributeError:
+        target_coords = unitary_to_monodromy_coordinate(Operator(target).data)
+    
+    # iterate through coverage set, sorted by cost
+    for circuit_polytope in coverage_set:
+        if circuit_polytope.has_element(target_coords):
+            return circuit_polytope.cost, circuit_polytope.operations
+        
+    raise TranspilerError("Operation not found in coverage set.")
 
 def deduce_qlr_consequences(
         target: str,
@@ -130,6 +206,7 @@ def prereduce_operation_polytopes(
 
 def build_coverage_set(
         operations: List[CircuitPolytope],
+        single_qubit_cost: float = 0.,
         chatty: bool = False,
 ) -> List[CircuitPolytope]:
     """
@@ -233,7 +310,7 @@ def build_coverage_set(
             for operation in operations:
                 heapq.heappush(to_be_explored, CircuitPolytope(
                     operations=next_polytope.operations + operation.operations,
-                    cost=next_polytope.cost + operation.cost,
+                    cost=next_polytope.cost + operation.cost + single_qubit_cost,
                     convex_subpolytopes=operation.convex_subpolytopes,
                 ))
         else:
