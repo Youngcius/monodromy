@@ -74,7 +74,11 @@ def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPol
     )
 
     return CircuitPolytope(
-        operations=[f"{operation.name}({operation.params[0]:.5f})"],
+        operations=[
+            f"{operation.name}({operation.params[0]:.5f})"
+            if operation.params
+            else f"{operation.name}"
+        ],
         instructions=[operation],
         cost=cost,
         convex_subpolytopes=convex_polytope.convex_subpolytopes,
