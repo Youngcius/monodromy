@@ -148,7 +148,9 @@ def target_build_ansatz(
         QuantumCircuit: The ansatz circuit
     """
 
-    ops = coverage_lookup_operation(coverage_set=coverage_set, target=target)[1]
+    lookup = coverage_lookup_operation(coverage_set=coverage_set, target=target)
+    print(f"Cost of {target.name} is {lookup[0]}")
+    ops = lookup[1]
     ansatz = QuantumCircuit(2)
 
     # Begin with an empty operation to align the ops list with parameterized gates
