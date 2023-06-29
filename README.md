@@ -6,6 +6,9 @@ Computations in the monodromy polytope for quantum gate sets.
 
 #### This fork is focused on wrapping functions to be more easily integrated with Qiskit circuits.
 
+![Tests](https://github.com/evmckinney9/monodromy/actions/workflows/tests.yml/badge.svg?branch=main)
+![Format Check](https://github.com/evmckinney9/monodromy/actions/workflows/format-check.yml/badge.svg?branch=main)
+
 Change log:
 
 1. Modification to python packing, for ease of use.
