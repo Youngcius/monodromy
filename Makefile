@@ -4,9 +4,18 @@ PYTEST = .venv/bin/pytest
 PRE_COMMIT = .venv/bin/pre-commit
 
 init:
+	rm -rf .venv
 	$(PYTHON_VERSION) -m venv .venv
 	@$(PIP) install --upgrade pip
-	$(PIP) install -e .
+	$(PIP) install -e .[dev] --quiet
+	@$(PRE_COMMIT) install
+	@$(PRE_COMMIT) autoupdate
+	chmod +x .git/hooks/pre-commit
+	opencommit hook set
+
+upgrade:
+	$(PIP) install --upgrade pip
+	$(PIP) install -e .[dev] --upgrade
 
 clean:
 	@find ./ -type f -name '*.pyc' -exec rm -f {} \; 2>/dev/null || true
@@ -26,18 +35,19 @@ clean:
 	@rm -rf src/__pycache__
 	@rm -rf src/*.egg-info
 
-# test:
-# 	@$(PIP) install -e .[test] --quiet
-# 	$(PYTEST) src/tests
+test:
+	@$(PIP) install -e .[test] --quiet
+	$(PYTEST) src/tests
 
-# format:
-# 	@$(PIP) install -e .[format] --quiet
-# 	$(PRE_COMMIT) run --all-files
+format:
+	@$(PIP) install -e .[format] --quiet
+	$(PRE_COMMIT) run --all-files
 
-# precommit:
-# 	@$(PIP) install -e .[test] --quiet
-# 	$(PYTEST) src/tests
-# 	@$(PIP) install -e .[format] --quiet
-# 	$(PRE_COMMIT) run --all-files
+precommit:
+	@$(PIP) install -e .[test] --quiet
+	$(PYTEST) src/tests
+	@$(PIP) install -e .[format] --quiet
+	$(PRE_COMMIT) run --all-files
 
-.PHONY: init clean test precommit format
+.PHONY: init upgrade clean test precommit format
+

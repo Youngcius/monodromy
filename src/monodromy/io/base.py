@@ -5,7 +5,7 @@ Bare dataclasses which house polytope information.
 """
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 from qiskit.circuit import Instruction
 
 
@@ -78,4 +78,4 @@ class CircuitPolytopeData(PolytopeData):
     """
     cost: float
     operations: List[str]
-    instructions: List[Instruction]
+    instructions: Optional[List[Instruction]] = field(default_factory=list)
