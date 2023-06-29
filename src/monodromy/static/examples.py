@@ -1,16 +1,14 @@
-"""
-monodromy/static/examples.py
+"""monodromy/static/examples.py.
 
 A variety of "standard" polytopes and gates.
 """
 
-from ..polytopes import ConvexPolytope, make_convex_polytope, Polytope
+from ..polytopes import ConvexPolytope, Polytope, make_convex_polytope
 
 
 def exactly(*coordinates, name=None) -> Polytope:
-    """
-    Produce a family of inequalities that forces equality with `coordinates`.
-    """
+    """Produce a family of inequalities that forces equality with
+    `coordinates`."""
     table = []
     for index, coordinate in enumerate(coordinates):
         row = [0] * (1 + len(coordinates))
@@ -20,35 +18,37 @@ def exactly(*coordinates, name=None) -> Polytope:
     return make_convex_polytope([], equalities=table, name=name)
 
 
-everything_polytope = Polytope(convex_subpolytopes=[
-    ConvexPolytope(inequalities=[], name="True")
-])
-"""
-The basic boolean "True" polytope: all points belong.
+everything_polytope = Polytope(
+    convex_subpolytopes=[ConvexPolytope(inequalities=[], name="True")]
+)
+"""The basic boolean "True" polytope: all points belong.
 
 NOTE: This polytope is dimensionless.
 """
 
 
 empty_polytope = Polytope(convex_subpolytopes=[])
-"""
-The basic boolean "False" polytope: no points belong.
+"""The basic boolean "False" polytope: no points belong.
 
 NOTE: This polytope is dimensionless.
 """
 
 
-identity_polytope = Polytope(convex_subpolytopes=[
-    ConvexPolytope(inequalities=[], name="origin", equalities=[
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1],
-    ])
-])
-"""
-A polytope containing only the canonical coordinate of the identity gate, i.e.,
-the origin in 3-space.
-"""
+identity_polytope = Polytope(
+    convex_subpolytopes=[
+        ConvexPolytope(
+            inequalities=[],
+            name="origin",
+            equalities=[
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ],
+        )
+    ]
+)
+"""A polytope containing only the canonical coordinate of the identity gate,
+i.e., the origin in 3-space."""
 
 
 # # some parametric gates of interest

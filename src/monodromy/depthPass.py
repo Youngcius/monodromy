@@ -1,25 +1,33 @@
-from qiskit.transpiler import AnalysisPass
-from qiskit.transpiler.exceptions import TranspilerError
-from qiskit.circuit import Instruction
-from monodromy.coverage import  print_coverage_set, gates_to_coverage, coverage_lookup_operation
 import logging
-from qiskit.dagcircuit import DAGCircuit, DAGOpNode
-from qiskit.transpiler.passes import Collect2qBlocks, ConsolidateBlocks
-import retworkx
 from functools import lru_cache
 
+import retworkx
+from qiskit.circuit import Instruction
+from qiskit.dagcircuit import DAGCircuit, DAGOpNode
+from qiskit.transpiler import AnalysisPass
+from qiskit.transpiler.exceptions import TranspilerError
+from qiskit.transpiler.passes import Collect2qBlocks, ConsolidateBlocks
+
+from monodromy.coverage import (
+    coverage_lookup_operation,
+    gates_to_coverage,
+    print_coverage_set,
+)
+
+
 class MonodromyDepth(AnalysisPass):
-    """
-    MonodromyDepth class extends the AnalysisPass to perform cost analysis on a given 
-    CircuitDAG with respect to a specified 2-qubit basis gate. This basis gate is crucial in 
-    calculating the minimum execution cost of 2-qubit blocks within the CircuitDAG.
+    """MonodromyDepth class extends the AnalysisPass to perform cost analysis
+    on a given CircuitDAG with respect to a specified 2-qubit basis gate. This
+    basis gate is crucial in calculating the minimum execution cost of 2-qubit
+    blocks within the CircuitDAG.
 
-    This class is particularly useful for quantum circuit optimization where the cost 
-    associated with the execution of certain gates is a crucial factor in the overall performance 
-    of the quantum computer.
+    This class is particularly useful for quantum circuit optimization
+    where the cost associated with the execution of certain gates is a
+    crucial factor in the overall performance of the quantum computer.
 
-    This class requires the Collect2qBlocks and ConsolidateBlocks passes to decompose the 
-    CircuitDAG into 2-qubit blocks and consolidate them respectively. 
+    This class requires the Collect2qBlocks and ConsolidateBlocks passes
+    to decompose the CircuitDAG into 2-qubit blocks and consolidate them
+    respectively.
     """
 
     _coverage_cache = {}  # Class level cache
@@ -38,13 +46,12 @@ class MonodromyDepth(AnalysisPass):
             self.coverage_set = self._gate_set_to_coverage()
             MonodromyDepth._coverage_cache[basis_gate_key] = self.coverage_set
 
-
     @lru_cache(maxsize=None)
     def _gate_set_to_coverage(self):
-        """
-        The gate_set_to_coverage() function takes the basis gate and creates a CircuitPolytope object 
-        that represents all the possible 2Q unitaries that can be formed by piecing together different 
-        instances of the basis gate.
+        """The gate_set_to_coverage() function takes the basis gate and creates
+        a CircuitPolytope object that represents all the possible 2Q unitaries
+        that can be formed by piecing together different instances of the basis
+        gate.
 
         :return: A CircuitPolytope object
         """
@@ -64,10 +71,10 @@ class MonodromyDepth(AnalysisPass):
         return coverage_set
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
-        """
-        The run() method is the main entry point for the AnalysisPass. It takes a CircuitDAG as input 
-        and returns an updated CircuitDAG. This method applies the basis gate to the CircuitDAG, 
-        computes the cost of the applied gate, and updates the CircuitDAG accordingly.
+        """The run() method is the main entry point for the AnalysisPass. It
+        takes a CircuitDAG as input and returns an updated CircuitDAG. This
+        method applies the basis gate to the CircuitDAG, computes the cost of
+        the applied gate, and updates the CircuitDAG accordingly.
 
         :param dag: The CircuitDAG to be analyzed.
         :return: An updated CircuitDAG.
@@ -75,7 +82,7 @@ class MonodromyDepth(AnalysisPass):
         SCALE_FACTOR = 1000  # scale factor to convert floats to integers
 
         def weight_fn(_1, node, _2) -> int:
-            """Weight function for longest path algorithm"""
+            """Weight function for longest path algorithm."""
             target_node = dag._multi_graph[node]
             if not isinstance(target_node, DAGOpNode):
                 return 0
@@ -86,15 +93,19 @@ class MonodromyDepth(AnalysisPass):
             elif len(target_node.qargs) > 2:
                 raise TranspilerError("Operation not supported.")
             else:
-                float_cost = coverage_lookup_operation(self.coverage_set, target_node.op)[0]
+                float_cost = coverage_lookup_operation(
+                    self.coverage_set, target_node.op
+                )[0]
                 return int(float_cost * SCALE_FACTOR)
-        
-        longest_path_length = retworkx.dag_longest_path_length(dag._multi_graph, weight_fn=weight_fn)
+
+        longest_path_length = retworkx.dag_longest_path_length(
+            dag._multi_graph, weight_fn=weight_fn
+        )
         # convert back to float
         longest_path_length /= SCALE_FACTOR
-        
+
         if self.chatty:
             logging.info(f"Longest path length: {longest_path_length}")
-        
+
         self.property_set["monodromy_depth"] = longest_path_length
         return dag

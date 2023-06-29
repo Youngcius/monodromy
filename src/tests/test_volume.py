@@ -1,13 +1,12 @@
-"""
-test/test_volume.py
+"""test/test_volume.py.
 
 Tests for monodromy/volume.py .
 """
 
-import qiskit
+
+import unittest
 
 import ddt
-import unittest
 
 from monodromy.polytopes import make_convex_polytope
 from monodromy.volume import *
@@ -39,12 +38,20 @@ class TestMonodromyVolume(unittest.TestCase):
         return volume_fn, get_counter
 
     def test_null_efficiency(self):
-        """Test that empty polytopes have skipped children"""
-        polytope = make_convex_polytope([
-            [0,  1], [1, -1],
-        ]).union(make_convex_polytope([
-            [0,  1], [-1, -1],
-        ]))
+        """Test that empty polytopes have skipped children."""
+        polytope = make_convex_polytope(
+            [
+                [0, 1],
+                [1, -1],
+            ]
+        ).union(
+            make_convex_polytope(
+                [
+                    [0, 1],
+                    [-1, -1],
+                ]
+            )
+        )
 
         volume_fn, get_counter = self.volume_fn(1)
         alternating_sum(polytope, volume_fn)
@@ -53,13 +60,23 @@ class TestMonodromyVolume(unittest.TestCase):
 
     def test_duplication_efficiency(self):
         """Test that equal polytopes have skipped children."""
-        polytope = make_convex_polytope([
-            [0,  1], [1, -1],  # [0, 1]
-        ]).union(make_convex_polytope([
-            [0,  1], [2, -1],  # [0, 2]
-        ])).union(make_convex_polytope([
-            [-1, 1], [1, -1]   # [-1, 1]
-        ]))
+        polytope = (
+            make_convex_polytope(
+                [
+                    [0, 1],
+                    [1, -1],  # [0, 1]
+                ]
+            )
+            .union(
+                make_convex_polytope(
+                    [
+                        [0, 1],
+                        [2, -1],  # [0, 2]
+                    ]
+                )
+            )
+            .union(make_convex_polytope([[-1, 1], [1, -1]]))  # [-1, 1]
+        )
 
         volume_fn, get_counter = self.volume_fn(1)
         alternating_sum(polytope, volume_fn)

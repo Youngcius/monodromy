@@ -1,26 +1,25 @@
-"""
-monodromy/backend/lrs.py
+"""monodromy/backend/lrs.py.
 
 Communication interface for `lrs`, a package for convex hull problems.
 
-More information about `lrs`: http://cgm.cs.mcgill.ca/~avis/C/lrs.html
+More information about `lrs`:
+http://cgm.cs.mcgill.ca/~avis/C/lrs.html
 """
 
 
+import math  # for gcd
 from copy import copy
 from fractions import Fraction
 from functools import reduce
-import math  # for gcd
 from operator import itemgetter
 from os import getenv
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from typing import List
 
-from .backend_abc import Backend
 from ..exceptions import NoFeasibleSolutions
 from ..polytopes import ConvexPolytope, PolytopeVolume
 from ..utilities import lcm
-
+from .backend_abc import Backend
 
 LRS_ENV = "LRS_PATH"
 """Environment variable used to override the path to the `lrs` executable."""
@@ -31,9 +30,7 @@ LRS_PATH = getenv(LRS_ENV, "lrs")
 
 
 def check_for_lrs():
-    """
-    Checks whether `lrs` is findable and executable.
-    """
+    """Checks whether `lrs` is findable and executable."""
     try:
         proc = Popen([LRS_PATH], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         proc.communicate(b"")
@@ -92,7 +89,8 @@ class LRSBackend(Backend):
         inequalities = convex_polytope.inequalities
         equalities = convex_polytope.equalities
         inequality_payload = encode_inequalities(
-            inequalities, equalities,
+            inequalities,
+            equalities,
         )
         vertex_response = single_lrs_pass(inequality_payload)
         vertices = decode_vertices(vertex_response)
@@ -122,9 +120,10 @@ class LRSBackend(Backend):
         if 0 == len(convex_polytope.vertices):
             raise NoFeasibleSolutions()
 
-        vertex_payload = encode_vertices([(Fraction(1, 1), *v)
-                                          for v in convex_polytope.vertices],
-                                         options=["triangulation"])
+        vertex_payload = encode_vertices(
+            [(Fraction(1, 1), *v) for v in convex_polytope.vertices],
+            options=["triangulation"],
+        )
         response = single_lrs_pass(vertex_payload)
         simplices = decode_simplices(response)
         return simplices["simplices"]
@@ -158,8 +157,9 @@ def single_lrs_pass(payload: bytes, chatty=False) -> bytes:
     return stdout
 
 
-def encode_inequalities(inequalities, equalities=None, name="name",
-                        options=None) -> bytes:
+def encode_inequalities(
+    inequalities, equalities=None, name="name", options=None
+) -> bytes:
     """Format `inequalities` for consumption by lrs."""
     equalities = equalities if equalities is not None else []
     options = options if options is not None else []
@@ -170,9 +170,11 @@ def encode_inequalities(inequalities, equalities=None, name="name",
     #     output += f"linearity {len(equalities)} " \
     #               f"{' '.join(range(1, 1 + len(equalities)))}\n"
     output += "begin\n"
-    output += (f"{len(inequalities) + 2*len(equalities)}"
-               f" {len((inequalities + equalities)[0])}"
-               " rational\n")
+    output += (
+        f"{len(inequalities) + 2*len(equalities)}"
+        f" {len((inequalities + equalities)[0])}"
+        " rational\n"
+    )
     for row in inequalities + equalities + [[-x for x in eq] for eq in equalities]:
         row_gcd = abs(reduce(math.gcd, row))
         row_gcd = row_gcd if row_gcd != 0 else 1
@@ -192,46 +194,46 @@ def decode_inequalities(lrs_output: bytes):
     equality_indices = []
     invocation_signature = None
     break_at_end = False
-    for line in lrs_output.decode('utf-8').splitlines():
+    for line in lrs_output.decode("utf-8").splitlines():
         # initialize
-        if line.startswith('*lrs') and line != invocation_signature:
+        if line.startswith("*lrs") and line != invocation_signature:
             name = None
             invocation_signature = line
         # stash the Volume output
-        if line.startswith('*Volume='):
+        if line.startswith("*Volume="):
             if volume is None:
                 volume = Fraction(line[8:])
             continue
         # ignore comments
-        if line.startswith('*') or line == '':
+        if line.startswith("*") or line == "":
             continue
         # first non-comment line is our name
         if name is None:
             name = line
             continue
         # ignore begin / end, assume they're in the right place
-        if line.startswith('end'):
+        if line.startswith("end"):
             if break_at_end:
                 break
             else:
                 continue
-        if line.startswith('begin'):
+        if line.startswith("begin"):
             rows = []
             continue
         # skip the table size, if it's present
-        if 'rational' in line:
+        if "rational" in line:
             continue
         # skip echoed option
-        if line.startswith('redund'):
+        if line.startswith("redund"):
             break_at_end = True
             continue
         # check that we're looking at the right kind of representation
-        if line == 'H-representation':
+        if line == "H-representation":
             continue
-        if line == 'V-representation':
+        if line == "V-representation":
             raise ValueError("Inequality table decoder got a vertex table as input")
         # if we produced a degenerate polytope, note the indices
-        if line.startswith('linearity'):
+        if line.startswith("linearity"):
             equality_indices = [int(x) for x in line[9:].split()[1:]]
             continue
 
@@ -243,14 +245,16 @@ def decode_inequalities(lrs_output: bytes):
         if break_at_end:
             raise NoFeasibleSolutions()
         else:
-            print(lrs_output.decode('utf-8'))
+            print(lrs_output.decode("utf-8"))
             raise TypeError("Something bad happened in `lrs`.")
 
     return dict(
-        inequalities=[row for index, row in enumerate(rows)
-                      if 1 + index not in equality_indices],
-        equalities=[row for index, row in enumerate(rows)
-                    if 1 + index in equality_indices],
+        inequalities=[
+            row for index, row in enumerate(rows) if 1 + index not in equality_indices
+        ],
+        equalities=[
+            row for index, row in enumerate(rows) if 1 + index in equality_indices
+        ],
         volume=volume,
         dimension=len(rows[0]) - 1 - len(equality_indices),
     )
@@ -259,13 +263,13 @@ def decode_inequalities(lrs_output: bytes):
 def decode_simplices(lrs_output: bytes):
     """Parse lrs output from a tetrahedral run into python data."""
     simplices = []
-    for line in lrs_output.decode('utf-8').splitlines():
+    for line in lrs_output.decode("utf-8").splitlines():
         # initialize
-        if line.startswith('*lrs'):
+        if line.startswith("*lrs"):
             simplices = []
-        if line.startswith('end'):
+        if line.startswith("end"):
             break
-        if line.startswith('F#'):
+        if line.startswith("F#"):
             tokens = line.split()
             position = tokens.index("vertices/rays")
             indices = []
@@ -277,9 +281,7 @@ def decode_simplices(lrs_output: bytes):
                     break
             simplices.append(indices)
 
-    return dict(
-        simplices=simplices
-    )
+    return dict(simplices=simplices)
 
 
 def encode_vertices(vertices, name="name", options=None) -> bytes:
@@ -305,35 +307,35 @@ def decode_vertices(lrs_output: bytes):
     invocation_signature = None
     name = None
     vertices = []
-    for line in lrs_output.decode('utf-8').splitlines():
-        if line.startswith('*lrs') and line != invocation_signature:
+    for line in lrs_output.decode("utf-8").splitlines():
+        if line.startswith("*lrs") and line != invocation_signature:
             name = None
             invocation_signature = line
         # ignore comments
-        if line.startswith('*') or line == '':
+        if line.startswith("*") or line == "":
             continue
         # first non-comment line is our name
         if name is None:
             name = line
             continue
         # ignore begin / end, assume they're in the right place
-        if line.startswith('end'):
+        if line.startswith("end"):
             continue
-        if line.startswith('begin'):
+        if line.startswith("begin"):
             vertices = []
             continue
-        if line == 'V-representation':
+        if line == "V-representation":
             continue
-        if line == 'H-representation':
+        if line == "H-representation":
             raise ValueError("Vertex table decoder got an inequality table as input")
-        if line.startswith('linearity'):
+        if line.startswith("linearity"):
             continue
         if line.startswith("No feasible solution"):
             raise NoFeasibleSolutions()
         vertices.append([Fraction(x) for x in line.split()])
 
     if 0 == len(vertices):
-        print(lrs_output.decode('utf-8'))
+        print(lrs_output.decode("utf-8"))
         raise TypeError("Something bad happened in `lrs`.")
 
     return vertices

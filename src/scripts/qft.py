@@ -1,21 +1,21 @@
-"""
-scripts/qft.py
+"""scripts/qft.py.
 
 Count the XX interactions in synthesized QFT circuits of various sizes.
 
 NOTE: Runs indefinitely.
 """
 
-import qiskit
-import numpy as np
 from collections import defaultdict
 from itertools import count
+
+import numpy as np
+import qiskit
 
 for qubit_count in count(3):
     qc = qiskit.circuit.library.QFT(qubit_count)
     cx_counts = defaultdict(lambda: 0)
     for gate, _, _ in qiskit.transpile(
-            qc, basis_gates=['u3', 'cx'], translation_method='synthesis'
+        qc, basis_gates=["u3", "cx"], translation_method="synthesis"
     ).data:
         if isinstance(gate, qiskit.circuit.library.CXGate):
             cx_counts[np.pi] += 1
@@ -24,7 +24,7 @@ for qubit_count in count(3):
 
     rzx_counts = defaultdict(lambda: 0)
     for gate, _, _ in qiskit.transpile(
-            qc, basis_gates=['u3', 'rzx'], translation_method='synthesis'
+        qc, basis_gates=["u3", "rzx"], translation_method="synthesis"
     ).data:
         if isinstance(gate, qiskit.circuit.library.CXGate):
             rzx_counts[np.pi] += 1

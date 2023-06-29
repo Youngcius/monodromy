@@ -1,52 +1,53 @@
+import numpy as np
 import qiskit.quantum_info
 from qiskit.quantum_info.synthesis.xx_decompose import XXDecomposer
-
-import numpy as np
 from scipy.stats import unitary_group
 
-from monodromy.coverage import *
-from monodromy.static.examples import *
-from monodromy.haar import expected_cost
 import monodromy.render
+from monodromy.coverage import *
+from monodromy.haar import expected_cost
+from monodromy.static.examples import *
 
 
 def default_zx_operation_cost(
-        strength: Fraction,
-        # note: Isaac reports this value in percent per degree
-        scale_factor: float = (64 * 90) / (10000 * 100),
-        # first component: 2Q invocation cost; second component: local cost
-        offset: float = 909 / (10000 * 100) + 1 / 1000,
+    strength: Fraction,
+    # note: Isaac reports this value in percent per degree
+    scale_factor: float = (64 * 90) / (10000 * 100),
+    # first component: 2Q invocation cost; second component: local cost
+    offset: float = 909 / (10000 * 100) + 1 / 1000,
 ):
-    """
-    A sample fidelity cost model, extracted from experiment, for ZX operations.
-    """
+    """A sample fidelity cost model, extracted from experiment, for ZX
+    operations."""
     return strength * scale_factor + offset
 
 
-def get_zx_operations(strengths: Dict[Fraction, float]) \
-        -> List[CircuitPolytope]:
-    """
-    Converts a dictionary mapping fractional CX `strengths` to fidelities to the
-    corresponding list of `OperationPolytope`s.
-    """
+def get_zx_operations(strengths: Dict[Fraction, float]) -> List[CircuitPolytope]:
+    """Converts a dictionary mapping fractional CX `strengths` to fidelities to
+    the corresponding list of `OperationPolytope`s."""
     operations = []
 
     for strength, fidelity in strengths.items():
-        operations.append(CircuitPolytope(
-            operations=[f"rzx(pi/2 * {strength})"],
-            cost=fidelity,
-            convex_subpolytopes=exactly(
-                strength / 4, strength / 4, -strength / 4,
-            ).convex_subpolytopes,
-        ))
+        operations.append(
+            CircuitPolytope(
+                operations=[f"rzx(pi/2 * {strength})"],
+                cost=fidelity,
+                convex_subpolytopes=exactly(
+                    strength / 4,
+                    strength / 4,
+                    -strength / 4,
+                ).convex_subpolytopes,
+            )
+        )
 
     return operations
 
 
-operations = get_zx_operations({
-    frac: default_zx_operation_cost(frac)
-    for frac in [Fraction(1), Fraction(1, 2), Fraction(1, 3)]
-})
+operations = get_zx_operations(
+    {
+        frac: default_zx_operation_cost(frac)
+        for frac in [Fraction(1), Fraction(1, 2), Fraction(1, 3)]
+    }
+)
 
 # build the set of covering polytopes
 print("==== Working to build a set of covering polytopes ====")
@@ -76,5 +77,7 @@ circuit = monodromy_decomposer(u, approximate=False)
 with np.printoptions(precision=4, suppress=True):
     print(u)
     print(qiskit.quantum_info.Operator(circuit).data)
-    print(f"=== {(abs(u - qiskit.quantum_info.Operator(circuit).data) < 1e-1).all()} ===")
+    print(
+        f"=== {(abs(u - qiskit.quantum_info.Operator(circuit).data) < 1e-1).all()} ==="
+    )
     print(circuit)

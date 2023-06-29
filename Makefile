@@ -50,4 +50,3 @@ precommit:
 	$(PRE_COMMIT) run --all-files
 
 .PHONY: init upgrade clean test precommit format
-

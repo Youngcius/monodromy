@@ -1,28 +1,24 @@
-"""
-monodromy/elimination.py
+"""monodromy/elimination.py.
 
-Implements coordinate-wise inclusion and projections of inequality families.
+Implements coordinate-wise inclusion and projections of inequality
+families.
 """
 
 from typing import List
 
-from .polytopes import Polytope, ConvexPolytope
+from .polytopes import ConvexPolytope, Polytope
 
 
 def cylinderize(
-        polytope: Polytope,
-        coordinate_map: List[int],
-        parent_dimension: int = 10):
-    """
-    Consumes a `polytope` and a list of n coordinates on Q^m, and emits a
-    polytope cylinderized along the complement of those Q^m coordinates.
-    """
+    polytope: Polytope, coordinate_map: List[int], parent_dimension: int = 10
+):
+    """Consumes a `polytope` and a list of n coordinates on Q^m, and emits a
+    polytope cylinderized along the complement of those Q^m coordinates."""
 
     cylinderized_polytope = Polytope(convex_subpolytopes=[])
     for convex_subpolytope in polytope.convex_subpolytopes:
         cylinderized_subpolytope = ConvexPolytope(
-            inequalities=[],
-            name=convex_subpolytope.name
+            inequalities=[], name=convex_subpolytope.name
         )
         for inequality in convex_subpolytope.inequalities:
             new_row = [0] * parent_dimension
@@ -34,16 +30,13 @@ def cylinderize(
             for source_value, target_index in zip(equality, coordinate_map):
                 new_row[target_index] += source_value
             cylinderized_subpolytope.equalities.append(new_row)
-        cylinderized_polytope.convex_subpolytopes.append(
-            cylinderized_subpolytope
-        )
+        cylinderized_polytope.convex_subpolytopes.append(cylinderized_subpolytope)
 
     return cylinderized_polytope
 
 
 def project(polytope, index):
-    """
-    Returns the projection of `polytope` away from coordinate `index`.
+    """Returns the projection of `polytope` away from coordinate `index`.
 
     Implements the (naive) Fourier-Motzkin elimination algorithm; see
 
@@ -97,20 +90,26 @@ def project(polytope, index):
 
                 pos_scalar = positive_inequality[index]
                 neg_scalar = negative_inequality[index]
-                joined_inequality = [p * -neg_scalar + n * pos_scalar
-                                     for (p, n) in zip(positive_inequality, negative_inequality)]
-                joined_inequality = joined_inequality[:index] + joined_inequality[1+index:]
+                joined_inequality = [
+                    p * -neg_scalar + n * pos_scalar
+                    for (p, n) in zip(positive_inequality, negative_inequality)
+                ]
+                joined_inequality = (
+                    joined_inequality[:index] + joined_inequality[1 + index :]
+                )
 
                 joined_inequalities.append(joined_inequality)
 
         # For the remainder, we just ignore the unwanted coordinate.
-        zero_inequalities = [z[:index] + z[1+index:] for z in zero_inequalities]
-        zero_equalities = [z[:index] + z[1+index:] for z in zero_equalities]
+        zero_inequalities = [z[:index] + z[1 + index :] for z in zero_inequalities]
+        zero_equalities = [z[:index] + z[1 + index :] for z in zero_equalities]
 
         projected_polytope.convex_subpolytopes.append(
-            ConvexPolytope(inequalities=zero_inequalities + joined_inequalities,
-                           equalities=zero_equalities,
-                           name=convex_subpolytope.name)
+            ConvexPolytope(
+                inequalities=zero_inequalities + joined_inequalities,
+                equalities=zero_equalities,
+                name=convex_subpolytope.name,
+            )
         )
 
     return projected_polytope

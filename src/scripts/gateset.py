@@ -1,5 +1,4 @@
-"""
-scripts/gateset.py
+"""scripts/gateset.py.
 
 Example script showing how to optimize a(n XX-based) gateset for performance
 against a user-defined cost metric.
@@ -13,16 +12,16 @@ NOTE: We don't make use of tools which are further specialized for XX-based
 NOTE: `rescaled_objective` always includes a full XX.
 """
 
-from itertools import count
 import math
+from itertools import count
 from time import perf_counter
 
 import numpy as np
 import pybobyqa
 
 from monodromy.coverage import *
-from monodromy.static.examples import *
 from monodromy.haar import cost_statistics  # , expected_cost
+from monodromy.static.examples import *
 
 gateset_dimension = 1  # how many gates to include beyond a full CX
 filename = "gateset_landscape_1d.dat"  # .dat file with expected cost info
@@ -41,28 +40,28 @@ scale_factor = (64 * 90) / (10000 * 100)
 
 
 def operation_cost(
-        strength: Fraction,
-        scale_factor: float = scale_factor,
-        offset: float = offset,
+    strength: Fraction,
+    scale_factor: float = scale_factor,
+    offset: float = offset,
 ):
     return strength * scale_factor + offset
 
 
 def get_operations(*strengths):
-    """
-    Builds a family of XX-type operations, where each strength in `strengths` is
-    specified as a fraction of the "full strength" XX-type operation, CX.
-    """
+    """Builds a family of XX-type operations, where each strength in
+    `strengths` is specified as a fraction of the "full strength" XX-type
+    operation, CX."""
     return [
         CircuitPolytope(
             convex_subpolytopes=exactly(
-                Fraction( 1, 4) * strength,
-                Fraction( 1, 4) * strength,
-                Fraction(-1, 4) * strength
+                Fraction(1, 4) * strength,
+                Fraction(1, 4) * strength,
+                Fraction(-1, 4) * strength,
             ).convex_subpolytopes,
             cost=operation_cost(strength),
             operations=[f"{str(strength)} XX"],
-        ) for strength in set(strengths)
+        )
+        for strength in set(strengths)
     ]
 
 
@@ -75,16 +74,15 @@ cost_table = {}
 
 
 def objective(ratios):
-    """
-    Function to be optimized: consumes a family of interaction strengths, then
-    computes the expected cost of compiling a Haar-randomly chosen 2Q operator.
-    """
+    """Function to be optimized: consumes a family of interaction strengths,
+    then computes the expected cost of compiling a Haar-randomly chosen 2Q
+    operator."""
     global offset, scale_factor
 
     timer_coverage = perf_counter()
     operations = get_operations(*ratios)
-    strengths_string = ', '.join([str(s) + " XX" for s in ratios])
-    print(f"Working on " + strengths_string)
+    strengths_string = ", ".join([str(s) + " XX" for s in ratios])
+    print("Working on " + strengths_string)
     coverage_set = build_coverage_set(operations, chatty=True)
     timer_coverage = perf_counter() - timer_coverage
     timer_haar = perf_counter()
@@ -95,14 +93,14 @@ def objective(ratios):
     timer_haar = perf_counter() - timer_haar
     print(
         f"{strengths_string} took {timer_coverage:.3f}s + {timer_haar:.3f}s = "
-        f"{timer_coverage + timer_haar:.3f}s")
+        f"{timer_coverage + timer_haar:.3f}s"
+    )
     return cost
 
 
 def rescaled_objective(ratios, max_denominator=100):
-    """
-    `objective` with its domain rescaled for easier use by `pybobyqa`: the
-    sequence
+    """`objective` with its domain rescaled for easier use by `pybobyqa`: the
+    sequence.
 
         [a1, a2, ..., an]
 
@@ -119,28 +117,33 @@ def rescaled_objective(ratios, max_denominator=100):
         else:
             previous_strength = Fraction(1)
         triangular_strengths.append(
-            previous_strength * Fraction(ratio)
-            .limit_denominator(max_denominator)
+            previous_strength * Fraction(ratio).limit_denominator(max_denominator)
         )
 
     return objective(triangular_strengths)
 
 
 def print_cost_table():
-    """
-    Utility function for printing the expected costs calculated so far.
-    """
+    """Utility function for printing the expected costs calculated so far."""
     global filename, gateset_dimension
 
     keys = ["average_cost", "average_overshot", "sigma_cost", "sigma_overshot"]
 
     print("Dumping cost table...")
     with open(filename, "w") as fh:
-        fh.write(' '.join([f'strength{n}' for n in range(1 + gateset_dimension)])
-                 + " " + ' '.join(keys) + '\n')
+        fh.write(
+            " ".join([f"strength{n}" for n in range(1 + gateset_dimension)])
+            + " "
+            + " ".join(keys)
+            + "\n"
+        )
         for k, v in cost_table.items():
-            fh.write(' '.join(str(float(entry)) for entry in k) + ' ' +
-                     ' '.join(str(v[key]) for key in keys) + '\n')
+            fh.write(
+                " ".join(str(float(entry)) for entry in k)
+                + " "
+                + " ".join(str(v[key]) for key in keys)
+                + "\n"
+            )
     print("Dumped.")
 
 
@@ -150,11 +153,12 @@ def print_cost_table():
 # gateset.
 x0 = np.array([Fraction(1, 2)] * gateset_dimension)
 solution = pybobyqa.solve(
-    rescaled_objective, x0,
+    rescaled_objective,
+    x0,
     bounds=([0] * gateset_dimension, [1] * gateset_dimension),
     objfun_has_noise=False,
     print_progress=True,
-    rhoend=1e-4
+    rhoend=1e-4,
 )
 
 print("Optimizer solution:")
@@ -165,17 +169,14 @@ print(cost_table)
 
 ################################################################################
 
-print("Now we enter an infinite loop to flesh out the gateset landscape and "
-      "turn it into a nice plot overall.  Use KeyboardInterrupt to quit "
-      "whenever you're satisfied.")
+print(
+    "Now we enter an infinite loop to flesh out the gateset landscape and "
+    "turn it into a nice plot overall.  Use KeyboardInterrupt to quit "
+    "whenever you're satisfied."
+)
 
 
-def iterate_over_total(
-    total,
-    bucket_count,
-    fn,
-    partial_fill=None
-):
+def iterate_over_total(total, bucket_count, fn, partial_fill=None):
     partial_fill = partial_fill if partial_fill is not None else []
     if bucket_count == len(partial_fill):
         return fn(partial_fill)
@@ -183,28 +184,16 @@ def iterate_over_total(
     if bucket_count == 1 + len(partial_fill):
         if total - sum(partial_fill) >= 2:
             return iterate_over_total(
-                total,
-                bucket_count,
-                fn,
-                [*partial_fill, total - sum(partial_fill)]
+                total, bucket_count, fn, [*partial_fill, total - sum(partial_fill)]
             )
         else:
             return
 
     for denominator in range(1, total - sum(partial_fill)):
-        iterate_over_total(
-            total,
-            bucket_count,
-            fn,
-            [*partial_fill, denominator]
-        )
+        iterate_over_total(total, bucket_count, fn, [*partial_fill, denominator])
 
 
-def iterate_over_numerators(
-    denominators,
-    fn,
-    partial_fill=None
-):
+def iterate_over_numerators(denominators, fn, partial_fill=None):
     partial_fill = partial_fill if partial_fill is not None else []
     if 0 == len(denominators):
         return fn(partial_fill)
@@ -216,7 +205,7 @@ def iterate_over_numerators(
         iterate_over_numerators(
             denominators[1:],
             fn,
-            partial_fill=[*partial_fill, Fraction(j, denominators[0])]
+            partial_fill=[*partial_fill, Fraction(j, denominators[0])],
         )
 
 
@@ -232,8 +221,13 @@ for total in count(1):
         lambda denominators: [
             iterate_over_numerators(
                 denominators,
-                lambda ratios: objective([1, ] + ratios)
+                lambda ratios: objective(
+                    [
+                        1,
+                    ]
+                    + ratios
+                ),
             ),
-            print_cost_table()
-        ]
+            print_cost_table(),
+        ],
     )

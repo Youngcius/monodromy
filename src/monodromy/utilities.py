@@ -1,26 +1,24 @@
-"""
-monodromy/utilities.py
+"""monodromy/utilities.py.
 
 Depository for generic python utility snippets.
 """
 
 
+import warnings
 from fractions import Fraction
 from functools import wraps
 from typing import List
-import warnings
 
 import numpy as np
-
 
 epsilon = 1e-6  # Fraction(1, 1_000_000)
 
 
-memoized_attr_bucket = '_memoized_attrs'
+memoized_attr_bucket = "_memoized_attrs"
 
 
 def memoized_property(fget):
-    attr_name = f'_{fget.__name__}'
+    attr_name = f"_{fget.__name__}"
 
     @wraps(fget)
     def fget_memoized(self):
@@ -50,31 +48,29 @@ def bit_iteration(length, weight):
         yield 0
         return
 
-    pattern = 2 ** weight - 1
-    while pattern < 2 ** length:
+    pattern = 2**weight - 1
+    while pattern < 2**length:
         yield pattern
         t = (pattern | (pattern - 1)) + 1
         pattern = t | ((((t & -t) // (pattern & -pattern)) >> 1) - 1)
 
 
 def bitcount(bits):
-    return bin(bits).count('1')
+    return bin(bits).count("1")
 
 
 def bitscatter(bits, mask):
-    """
-    Scatters the contents of bitvector `bits` onto the raised bits in `mask`.
-    """
+    """Scatters the contents of bitvector `bits` onto the raised bits in
+    `mask`."""
     value = 0
     mask_walker = enumerate(reversed(bin(mask)[2:]))
-    for bit_index, mask_index in enumerate([x for x, y in mask_walker if y == '1']):
+    for bit_index, mask_index in enumerate([x for x, y in mask_walker if y == "1"]):
         value |= (bits & (1 << bit_index)) << (mask_index - bit_index)
     return value
 
 
 def fractionify(table) -> List[List[Fraction]]:
-    """
-    Convenience routine for not writing Fraction() a whole bunch.
+    """Convenience routine for not writing Fraction() a whole bunch.
 
     NOTE: This can be poorly behaved if your rationals don't have exact floating
           point representations!
@@ -92,34 +88,28 @@ def lcm(*numbers):
     return ret
 
 
-def nearp(x, y, modulus=np.pi/2, epsilon=epsilon):
-    """
-    Checks whether two points are near each other, accounting for float jitter
-    and wraparound.
-    """
-    return abs(np.mod(abs(x - y), modulus)) < epsilon or \
-           abs(np.mod(abs(x - y), modulus) - modulus) < epsilon
+def nearp(x, y, modulus=np.pi / 2, epsilon=epsilon):
+    """Checks whether two points are near each other, accounting for float
+    jitter and wraparound."""
+    return (
+        abs(np.mod(abs(x - y), modulus)) < epsilon
+        or abs(np.mod(abs(x - y), modulus) - modulus) < epsilon
+    )
 
 
 def l1_distance(x, y):
-    """
-    Computes the l_1 / Manhattan distance between two coordinates.
-    """
+    """Computes the l_1 / Manhattan distance between two coordinates."""
     return sum([abs(xx - yy) for xx, yy in zip(x, y)])
 
 
 # TODO: THIS IS A STOPGAP!!!
 def safe_arccos(numerator, denominator):
-    """
-    Computes arccos(n/d) with different (better?) numerical stability.
-    """
+    """Computes arccos(n/d) with different (better?) numerical stability."""
     threshold = 0.005
 
-    if abs(numerator) > abs(denominator) and \
-            abs(numerator - denominator) < threshold:
+    if abs(numerator) > abs(denominator) and abs(numerator - denominator) < threshold:
         return 0.0
-    elif abs(numerator) > abs(denominator) and \
-            abs(numerator + denominator) < threshold:
+    elif abs(numerator) > abs(denominator) and abs(numerator + denominator) < threshold:
         return np.pi
     else:
         with warnings.catch_warnings():

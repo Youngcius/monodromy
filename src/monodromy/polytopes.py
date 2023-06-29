@@ -1,5 +1,4 @@
-"""
-monodromy/polytopes.py
+"""monodromy/polytopes.py.
 
 Basic data structures for manipulating (non/convex) polytopes.
 """
@@ -11,17 +10,19 @@ from typing import List, Optional
 
 import monodromy.backend
 from monodromy.exceptions import NoFeasibleSolutions
-from monodromy.io.base import ConvexPolytopeData, PolytopeData, \
-    generate_anonymous_cp_name
-from monodromy.volume import alternating_sum
+from monodromy.io.base import (
+    ConvexPolytopeData,
+    PolytopeData,
+    generate_anonymous_cp_name,
+)
 from monodromy.utilities import clear_memoization, epsilon, memoized_property
+from monodromy.volume import alternating_sum
 
 
 @dataclass(order=True)
 class PolytopeVolume:
-    """
-    Represents the volume of a (possibly not top-dimensional) polytope.
-    """
+    """Represents the volume of a (possibly not top-dimensional) polytope."""
+
     dimension: int
     volume: Fraction
 
@@ -45,23 +46,21 @@ class PolytopeVolume:
                 volume=self.volume - other.volume,
             )
         else:
-            raise ValueError(f"Illegal to subtract high dim'l volume "
-                             f"from low dim'l source.")
+            raise ValueError(
+                "Illegal to subtract high dim'l volume " "from low dim'l source."
+            )
 
 
 @dataclass
 class ConvexPolytope(ConvexPolytopeData):
-    """
-    Houses a single convex polytope, together with methods for manipulation.
+    """Houses a single convex polytope, together with methods for manipulation.
 
     NOTE: This object is meant to be read-only after instantiation.
     """
 
     @memoized_property
     def volume(self) -> PolytopeVolume:
-        """
-        (Top-dimensional) Euclidean volume of this convex body.
-        """
+        """(Top-dimensional) Euclidean volume of this convex body."""
         try:
             return monodromy.backend.backend.volume(self)
         except NoFeasibleSolutions:
@@ -69,9 +68,7 @@ class ConvexPolytope(ConvexPolytopeData):
 
     @memoized_property
     def vertices(self) -> List[List[Fraction]]:
-        """
-        Set of extremal vertices of this convex body.
-        """
+        """Set of extremal vertices of this convex body."""
         try:
             return monodromy.backend.backend.vertices(self)
         except NoFeasibleSolutions:
@@ -79,24 +76,20 @@ class ConvexPolytope(ConvexPolytopeData):
 
     @memoized_property
     def triangulation(self) -> List[List[int]]:
-        """
-        Non-overlapping simplices which constitute this polytope, specified as
-        tuples of indices into .vertices .
-        """
+        """Non-overlapping simplices which constitute this polytope, specified
+        as tuples of indices into .vertices ."""
         if 0 == len(self.vertices):
             return []
         return monodromy.backend.backend.triangulation(self)
 
     @classmethod
     def convex_hull(cls, vertices):
-        """
-        Produces the minimal ConvexPolytope containing the list of `vertices`.
-        """
+        """Produces the minimal ConvexPolytope containing the list of
+        `vertices`."""
         return monodromy.backend.backend.convex_hull(vertices)
 
     def reduce(self):  # -> ConvexPolytope
-        """
-        Produces an equivalent convex body with irredundant inequalities.
+        """Produces an equivalent convex body with irredundant inequalities.
 
         Raises NoFeasibleSolutions if the reduced polytope is empty.
         """
@@ -119,32 +112,32 @@ class ConvexPolytope(ConvexPolytopeData):
         return output
 
     def intersect(self, other):  # ConvexPolytope, ConvexPolytope -> ConvexPolytope
-        """
-        Returns A cap B.
-        """
+        """Returns A cap B."""
         return ConvexPolytope(
             inequalities=self.inequalities + other.inequalities,
             equalities=self.equalities + other.equalities,
-            name=f"{self.name} ∩ {other.name}"
+            name=f"{self.name} ∩ {other.name}",
         )
 
     def has_element(self, point) -> bool:
-        """
-        Returns True when `point` belongs to `self`.
-        """
-        return (all([-epsilon <= inequality[0] +
-                                 sum(x * y for x, y in
-                                     zip(point, inequality[1:]))
-                     for inequality in self.inequalities]) and
-                all([abs(equality[0] + sum(x * y for x, y in
-                                           zip(point, equality[1:])))
-                     <= epsilon
-                     for equality in self.equalities]))
+        """Returns True when `point` belongs to `self`."""
+        return all(
+            [
+                -epsilon
+                <= inequality[0] + sum(x * y for x, y in zip(point, inequality[1:]))
+                for inequality in self.inequalities
+            ]
+        ) and all(
+            [
+                abs(equality[0] + sum(x * y for x, y in zip(point, equality[1:])))
+                <= epsilon
+                for equality in self.equalities
+            ]
+        )
 
     def contains(self, other) -> bool:
-        """
-        Returns True when this convex body is contained in the right-hand one.
-        """
+        """Returns True when this convex body is contained in the right-hand
+        one."""
         # NOTE: Alternatively, you could check volumes, as below.  Also
         #       alternatively, you could use .reduce() and check that the facet
         #       definitions are the same (up to rescaling?).  I think this is
@@ -155,17 +148,15 @@ class ConvexPolytope(ConvexPolytopeData):
 
 @dataclass
 class Polytope(PolytopeData):
-    """
-    A manipulable union of convex polytopes.
+    """A manipulable union of convex polytopes.
 
     NOTE: This object is meant to be read-only after instantiation.
     """
 
     @classmethod
     def inflate(cls, data):
-        """
-        Converts the `data` produced by `dataclasses.asdict` to a live object.
-        """
+        """Converts the `data` produced by `dataclasses.asdict` to a live
+        object."""
 
         data = {
             **data,
@@ -179,13 +170,12 @@ class Polytope(PolytopeData):
 
     @memoized_property
     def volume(self) -> PolytopeVolume:
-        """
-        Computes the Euclidean volume of this polytope.
-        """
+        """Computes the Euclidean volume of this polytope."""
 
         volumes = [cp.volume for cp in self.convex_subpolytopes]
-        top_dimension = 0 if len(volumes) == 0 \
-            else max([volume.dimension for volume in volumes])
+        top_dimension = (
+            0 if len(volumes) == 0 else max([volume.dimension for volume in volumes])
+        )
 
         def unwrapped_volume(convex_polytope):
             if convex_polytope.volume.dimension == top_dimension:
@@ -194,10 +184,13 @@ class Polytope(PolytopeData):
                 return 0
 
         volume = alternating_sum(
-            polytope=Polytope(convex_subpolytopes=[
-                cp for cp in self.convex_subpolytopes
+            polytope=Polytope(
+                convex_subpolytopes=[
+                    cp
+                    for cp in self.convex_subpolytopes
                     if cp.volume.dimension == top_dimension
-            ]),
+                ]
+            ),
             volume_fn=unwrapped_volume,
         )
 
@@ -205,23 +198,21 @@ class Polytope(PolytopeData):
 
     @memoized_property
     def vertices(self):
-        """
-        Returns the vertices of the convex subpolytopes.
-        """
-        return [convex_subpolytope.vertices
-                for convex_subpolytope in self.convex_subpolytopes]
+        """Returns the vertices of the convex subpolytopes."""
+        return [
+            convex_subpolytope.vertices
+            for convex_subpolytope in self.convex_subpolytopes
+        ]
 
     def reduce(self):
-        """
-        Removes redundant inequality sets from a Polytope.
-        """
+        """Removes redundant inequality sets from a Polytope."""
 
         independent_polytopes = []
         for convex_subpolytope in self.convex_subpolytopes:
             try:
-                independent_polytopes.append(Polytope(
-                    convex_subpolytopes=[convex_subpolytope.reduce()]
-                ))
+                independent_polytopes.append(
+                    Polytope(convex_subpolytopes=[convex_subpolytope.reduce()])
+                )
             except NoFeasibleSolutions:
                 pass
 
@@ -236,26 +227,21 @@ class Polytope(PolytopeData):
         return clone
 
     def union(self, other):
-        """
-        Returns A cup B.
-        """
+        """Returns A cup B."""
         clone = copy(self)
-        clone.convex_subpolytopes = (self.convex_subpolytopes +
-                                     other.convex_subpolytopes)
+        clone.convex_subpolytopes = self.convex_subpolytopes + other.convex_subpolytopes
         clear_memoization(clone)
         return clone
 
     def intersect(self, other):
-        """
-        Returns A cap B.
-        """
+        """Returns A cap B."""
         # distribute the intersection over the union
         convex_subpolytopes = []
         for left_subpolytope in self.convex_subpolytopes:
             for right_subpolytope in other.convex_subpolytopes:
-                convex_subpolytopes.append(left_subpolytope.intersect(
-                    right_subpolytope
-                ))
+                convex_subpolytopes.append(
+                    left_subpolytope.intersect(right_subpolytope)
+                )
 
         clone = copy(self)
         clone.convex_subpolytopes = convex_subpolytopes
@@ -274,15 +260,11 @@ class Polytope(PolytopeData):
         return output
 
     def has_element(self, point) -> bool:
-        """
-        Returns T when point belongs to this Polytope.
-        """
+        """Returns T when point belongs to this Polytope."""
         return any([cp.has_element(point) for cp in self.convex_subpolytopes])
 
     def contains(self, other) -> bool:
-        """
-        Returns True when the other polytope is contained in this one.
-        """
+        """Returns True when the other polytope is contained in this one."""
         # for n self.convex_subpolytopes and m other.convex_subpolytopes,
         # computing these volumes takes worst-case 2^m + 2^(nm) calls to lrs.
         # however, a necessary-but-insufficient condition for containment is
@@ -302,16 +284,16 @@ class Polytope(PolytopeData):
 
 
 def trim_polytope_set(
-        trimmable_polytopes: List[Polytope],
-        fixed_polytopes: Optional[List[Polytope]] = None
+    trimmable_polytopes: List[Polytope],
+    fixed_polytopes: Optional[List[Polytope]] = None,
 ) -> List[Polytope]:
-    """
-    Reduce a family of `Polytope`s by removing those which are in the union of
-    the rest.
+    """Reduce a family of `Polytope`s by removing those which are in the union
+    of the rest.
 
-    For flexibility, we break the input into two parts: a set of ConvexPolytopes
-    which we're trying to trim, as well as a set of ConvexPolytopes which
-    contribute to the notion of redundancy but which we don't attempt to reduce.
+    For flexibility, we break the input into two parts: a set of
+    ConvexPolytopes which we're trying to trim, as well as a set of
+    ConvexPolytopes which contribute to the notion of redundancy but
+    which we don't attempt to reduce.
 
     Returns an irredundant subsequence from trimmable_polytopes.
     """
@@ -348,18 +330,16 @@ def trim_polytope_set(
 
 
 def make_convex_polytope(
-        inequalities: List[List[int]],
-        equalities: Optional[List[List[int]]] = None,
-        name: Optional[str] = None,
+    inequalities: List[List[int]],
+    equalities: Optional[List[List[int]]] = None,
+    name: Optional[str] = None,
 ) -> Polytope:
-    """
-    Convenience method for forming a Polytope with one component.
-    """
+    """Convenience method for forming a Polytope with one component."""
     equalities = equalities if equalities is not None else []
     name = name if name is not None else generate_anonymous_cp_name()
 
-    return Polytope(convex_subpolytopes=[
-        ConvexPolytope(inequalities=inequalities,
-                       equalities=equalities,
-                       name=name)
-    ])
+    return Polytope(
+        convex_subpolytopes=[
+            ConvexPolytope(inequalities=inequalities, equalities=equalities, name=name)
+        ]
+    )

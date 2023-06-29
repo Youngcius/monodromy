@@ -1,14 +1,14 @@
-"""
-test/test_coverage.py
+"""test/test_coverage.py.
 
 Tests for monodromy/coverage.py .
 """
 
-import ddt
 import unittest
 
-from monodromy.polytopes import ConvexPolytope, PolytopeVolume
+import ddt
+
 from monodromy.coverage import *
+from monodromy.polytopes import ConvexPolytope, PolytopeVolume
 from monodromy.static.examples import exactly, identity_polytope
 
 
@@ -23,17 +23,19 @@ class TestMonodromyCoverage(unittest.TestCase):
                 Fraction(1, 4), Fraction(1, 4), Fraction(-1, 4)
             ).convex_subpolytopes,
             cost=1,
-            operations=["CX"]
+            operations=["CX"],
         )
         coverage_set = build_coverage_set([cx_polytope])
         self.assertEqual(
             {(), ("CX",), ("CX", "CX"), ("CX", "CX", "CX")},
-            {tuple(item.operations) for item in coverage_set}
+            {tuple(item.operations) for item in coverage_set},
         )
         cx0_polytope = next(p for p in coverage_set if p.operations == [])
         cx1_polytope = next(p for p in coverage_set if p.operations == ["CX"])
         cx2_polytope = next(p for p in coverage_set if p.operations == ["CX", "CX"])
-        cx3_polytope = next(p for p in coverage_set if p.operations == ["CX", "CX", "CX"])
+        cx3_polytope = next(
+            p for p in coverage_set if p.operations == ["CX", "CX", "CX"]
+        )
         self.assertTrue(cx3_polytope.contains(cx2_polytope))
         self.assertFalse(cx2_polytope.contains(cx3_polytope))
         self.assertTrue(cx2_polytope.contains(cx1_polytope))
@@ -44,13 +46,17 @@ class TestMonodromyCoverage(unittest.TestCase):
         self.assertTrue(cx3_polytope.contains(monodromy_alcove_c2))
         self.assertTrue(cx_polytope.contains(cx1_polytope))
 
-        expected_cx2 = Polytope(convex_subpolytopes=[
-            ConvexPolytope.convex_hull(
-                [[Fraction(0), Fraction(0), Fraction(0)],
-                 [Fraction(1, 2), Fraction(1, 2), -Fraction(1, 2)],
-                 [Fraction(1, 2), Fraction(0), Fraction(0)]]
-            )
-        ])
+        expected_cx2 = Polytope(
+            convex_subpolytopes=[
+                ConvexPolytope.convex_hull(
+                    [
+                        [Fraction(0), Fraction(0), Fraction(0)],
+                        [Fraction(1, 2), Fraction(1, 2), -Fraction(1, 2)],
+                        [Fraction(1, 2), Fraction(0), Fraction(0)],
+                    ]
+                )
+            ]
+        )
         self.assertTrue(expected_cx2.contains(cx2_polytope))
         self.assertTrue(cx2_polytope.contains(expected_cx2))
 
@@ -60,24 +66,24 @@ class TestMonodromyCoverage(unittest.TestCase):
             convex_subpolytopes=exactly(
                 Fraction(1, 8), Fraction(1, 8), Fraction(-1, 8)
             ).convex_subpolytopes,
-            cost=1/2 + 1e-10,
-            operations=["sqrtCX"]
+            cost=1 / 2 + 1e-10,
+            operations=["sqrtCX"],
         )
         coverage_set = build_coverage_set([sqrtcx_polytope])
 
         self.assertEqual(
             {tuple(x.operations) for x in coverage_set},
-            {tuple("sqrtCX" for _ in range(0, j)) for j in range(0, 6 + 1)}
+            {tuple("sqrtCX" for _ in range(0, j)) for j in range(0, 6 + 1)},
         )
 
         expected_volumes = {
-            ('sqrtCX',) * 0: PolytopeVolume(dimension=0, volume=Fraction(1, 1)),
-            ('sqrtCX',) * 1: PolytopeVolume(dimension=0, volume=Fraction(2, 1)),
-            ('sqrtCX',) * 2: PolytopeVolume(dimension=2, volume=Fraction(1, 16)),
-            ('sqrtCX',) * 3: PolytopeVolume(dimension=3, volume=Fraction(1, 96)),
-            ('sqrtCX',) * 4: PolytopeVolume(dimension=3, volume=Fraction(5, 288)),
-            ('sqrtCX',) * 5: PolytopeVolume(dimension=3, volume=Fraction(47, 2304)),
-            ('sqrtCX',) * 6: PolytopeVolume(dimension=3, volume=Fraction(1, 48))
+            ("sqrtCX",) * 0: PolytopeVolume(dimension=0, volume=Fraction(1, 1)),
+            ("sqrtCX",) * 1: PolytopeVolume(dimension=0, volume=Fraction(2, 1)),
+            ("sqrtCX",) * 2: PolytopeVolume(dimension=2, volume=Fraction(1, 16)),
+            ("sqrtCX",) * 3: PolytopeVolume(dimension=3, volume=Fraction(1, 96)),
+            ("sqrtCX",) * 4: PolytopeVolume(dimension=3, volume=Fraction(5, 288)),
+            ("sqrtCX",) * 5: PolytopeVolume(dimension=3, volume=Fraction(47, 2304)),
+            ("sqrtCX",) * 6: PolytopeVolume(dimension=3, volume=Fraction(1, 48)),
         }
 
         for x in coverage_set:
@@ -90,20 +96,24 @@ class TestMonodromyCoverage(unittest.TestCase):
                 Fraction(1, 4), Fraction(1, 4), Fraction(-1, 4)
             ).convex_subpolytopes,
             cost=1,
-            operations=["CX"]
+            operations=["CX"],
         )
         iswap_polytope = CircuitPolytope(
             convex_subpolytopes=exactly(
-                Fraction(1, 2), Fraction(0), Fraction(0),
+                Fraction(1, 2),
+                Fraction(0),
+                Fraction(0),
             ).convex_subpolytopes,
             cost=1,
-            operations=["ISWAP"]
+            operations=["ISWAP"],
         )
         cphase_polytope = CircuitPolytope(
-            convex_subpolytopes=[ConvexPolytope(
-                inequalities=[[0, 1, 0, 0], [1, -2, 0, 0]],
-                equalities=[[0, 1, -1, 0], [0, 1, 0, 1]]
-            )],
+            convex_subpolytopes=[
+                ConvexPolytope(
+                    inequalities=[[0, 1, 0, 0], [1, -2, 0, 0]],
+                    equalities=[[0, 1, -1, 0], [0, 1, 0, 1]],
+                )
+            ],
             cost=1,
             operations=["CPHASE"],
         )
@@ -114,7 +124,9 @@ class TestMonodromyCoverage(unittest.TestCase):
         # compare depth 2 polytopes
         cx2_polytope = next(p for p in cx_coverage_set if 2 == len(p.operations))
         iswap2_polytope = next(p for p in iswap_coverage_set if 2 == len(p.operations))
-        cphase2_polytope = next(p for p in cphase_coverage_set if 2 == len(p.operations))
+        cphase2_polytope = next(
+            p for p in cphase_coverage_set if 2 == len(p.operations)
+        )
         self.assertTrue(cx2_polytope.contains(iswap2_polytope))
         self.assertTrue(iswap2_polytope.contains(cphase2_polytope))
         self.assertTrue(cphase2_polytope.contains(cx2_polytope))
@@ -122,7 +134,9 @@ class TestMonodromyCoverage(unittest.TestCase):
         # compare depth 3 polytopes
         cx3_polytope = next(p for p in cx_coverage_set if 3 == len(p.operations))
         iswap3_polytope = next(p for p in iswap_coverage_set if 3 == len(p.operations))
-        cphase3_polytope = next(p for p in cphase_coverage_set if 3 == len(p.operations))
+        cphase3_polytope = next(
+            p for p in cphase_coverage_set if 3 == len(p.operations)
+        )
         self.assertTrue(cx3_polytope.contains(iswap3_polytope))
         self.assertTrue(iswap3_polytope.contains(cphase3_polytope))
         self.assertTrue(cphase3_polytope.contains(cx3_polytope))

@@ -1,17 +1,13 @@
-"""
-monodromy/decompose/ordered.py
+"""monodromy/decompose/ordered.py."""
 
-
-"""
 
 def calculate_scipy_coverage_set(
-        coverage_set: List[CircuitPolytope],
-        operations: List[OperationPolytope],
-        chatty=False
+    coverage_set: List[CircuitPolytope],
+    operations: List[OperationPolytope],
+    chatty=False,
 ) -> List[CircuitPolytope]:
-    """
-    Precalculates a set of backsolution polytopes associated to `covering_set`
-    and `operations`.
+    """Precalculates a set of backsolution polytopes associated to
+    `covering_set` and `operations`.
 
     Used as efficient input to `scipy_decomposition_hops` below.
     """
@@ -24,37 +20,52 @@ def calculate_scipy_coverage_set(
     inflated_operation_polytope = prereduce_operation_polytopes(
         operations=operations,
         target_coordinate="a",
-        background_polytope=Polytope(convex_subpolytopes=[
-            # equate first source and first target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1,  1, 0, 0, 0, 0, -1, -1, 0],
-                [0, -1, -1, 0, 0, 0, 0,  1,  1, 0],
-            ]),
-            # equate first source and second target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1,  1, 0, 0, 0, 0, -1, 0, -1],
-                [0, -1, -1, 0, 0, 0, 0,  1, 0,  1],
-            ]),
-            # equate first source and third target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1,  1, 0, 0, 0, 0, 0, -1, -1],
-                [0, -1, -1, 0, 0, 0, 0, 0,  1,  1],
-            ]),
-            # equate second source and second target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1, 0,  1, 0, 0, 0, -1, 0, -1],
-                [0, -1, 0, -1, 0, 0, 0,  1, 0,  1],
-            ]),
-            # equate second source and third target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1, 0,  1, 0, 0, 0, 0, -1, -1],
-                [0, -1, 0, -1, 0, 0, 0, 0,  1,  1],
-            ]),
-            # equate third source and third target coordinates
-            ConvexPolytope(inequalities=[
-                [0, 0,  1,  1, 0, 0, 0, 0, -1, -1],
-                [0, 0, -1, -1, 0, 0, 0, 0,  1,  1],
-            ])]),
+        background_polytope=Polytope(
+            convex_subpolytopes=[
+                # equate first source and first target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 1, 0, 0, 0, 0, -1, -1, 0],
+                        [0, -1, -1, 0, 0, 0, 0, 1, 1, 0],
+                    ]
+                ),
+                # equate first source and second target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 1, 0, 0, 0, 0, -1, 0, -1],
+                        [0, -1, -1, 0, 0, 0, 0, 1, 0, 1],
+                    ]
+                ),
+                # equate first source and third target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 1, 0, 0, 0, 0, 0, -1, -1],
+                        [0, -1, -1, 0, 0, 0, 0, 0, 1, 1],
+                    ]
+                ),
+                # equate second source and second target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 0, 1, 0, 0, 0, -1, 0, -1],
+                        [0, -1, 0, -1, 0, 0, 0, 1, 0, 1],
+                    ]
+                ),
+                # equate second source and third target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 0, 1, 0, 0, 0, 0, -1, -1],
+                        [0, -1, 0, -1, 0, 0, 0, 0, 1, 1],
+                    ]
+                ),
+                # equate third source and third target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 0, 1, 1, 0, 0, 0, 0, -1, -1],
+                        [0, 0, -1, -1, 0, 0, 0, 0, 1, 1],
+                    ]
+                ),
+            ]
+        ),
         chatty=chatty,
     )
 
@@ -70,9 +81,13 @@ def calculate_scipy_coverage_set(
             print(f"Working on {'.'.join(operation_polytope.operations)}...")
 
         ancestor_polytope = next(
-            (polytope for polytope in coverage_set
-             if polytope.operations == operation_polytope.operations[:-1]),
-            exactly(0, 0, 0))
+            (
+                polytope
+                for polytope in coverage_set
+                if polytope.operations == operation_polytope.operations[:-1]
+            ),
+            exactly(0, 0, 0),
+        )
 
         backsolution_polytope = inflated_operation_polytope[
             operation_polytope.operations[-1]
@@ -80,30 +95,27 @@ def calculate_scipy_coverage_set(
 
         # also impose whatever constraints we were given besides
         backsolution_polytope = backsolution_polytope.intersect(
-            cylinderize(
-                ancestor_polytope,
-                coordinates["a"],
-                parent_dimension=7
-            )
+            cylinderize(ancestor_polytope, coordinates["a"], parent_dimension=7)
         )
         backsolution_polytope = backsolution_polytope.reduce()
 
-        scipy_coverage_set.append(CircuitPolytope(
-            convex_subpolytopes=backsolution_polytope.convex_subpolytopes,
-            cost=operation_polytope.cost,
-            operations=operation_polytope.operations,
-        ))
+        scipy_coverage_set.append(
+            CircuitPolytope(
+                convex_subpolytopes=backsolution_polytope.convex_subpolytopes,
+                cost=operation_polytope.cost,
+                operations=operation_polytope.operations,
+            )
+        )
 
     return scipy_coverage_set
 
 
 def scipy_decomposition_hops(
-        coverage_set: List[CircuitPolytope],
-        scipy_coverage_set: List[CircuitPolytope],
-        target_polytope: PolytopeData
+    coverage_set: List[CircuitPolytope],
+    scipy_coverage_set: List[CircuitPolytope],
+    target_polytope: PolytopeData,
 ):
-    """
-    Fixing a `coverage_set` and a `scipy_coverage_set`, finds a minimal
+    """Fixing a `coverage_set` and a `scipy_coverage_set`, finds a minimal
     decomposition for a canonical interaction in `target_polytope` into a
     sequence of operations linking the polytopes in the coverage sets, together
     with specific intermediate canonical points linked by them.
@@ -124,8 +136,9 @@ def scipy_decomposition_hops(
     best_cost = float("inf")
     for polytope in coverage_set:
         if polytope.cost < best_cost:
-            for convex_subpolytope in \
-                    polytope.intersect(target_polytope).convex_subpolytopes:
+            for convex_subpolytope in polytope.intersect(
+                target_polytope
+            ).convex_subpolytopes:
                 solution = scipy_get_random_vertex(convex_subpolytope)
 
                 if solution.success:
@@ -158,9 +171,12 @@ def scipy_decomposition_hops(
                 ConvexPolytopeData(
                     inequalities=[
                         *cp.inequalities,
-                        *[[ineq[0], 0, 0, 0, ineq[1], ineq[2], ineq[3]]
-                          for ineq in
-                          target_polytope.convex_subpolytopes[0].inequalities]
+                        *[
+                            [ineq[0], 0, 0, 0, ineq[1], ineq[2], ineq[3]]
+                            for ineq in target_polytope.convex_subpolytopes[
+                                0
+                            ].inequalities
+                        ],
                     ],
                     equalities=cp.equalities,
                 )
@@ -179,8 +195,7 @@ def scipy_decomposition_hops(
 
         # a/k/a decomposition.push
         decomposition.insert(
-            0,
-            (solution.x[:3], working_operations[-1], solution.x[-3:])
+            0, (solution.x[:3], working_operations[-1], solution.x[-3:])
         )
         # NOTE: using `exactly` here causes an infinite loop.
         target_polytope = nearly(*solution.x[:3])

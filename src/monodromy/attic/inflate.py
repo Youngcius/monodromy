@@ -1,5 +1,4 @@
-"""
-monodromy/io/inflate.py
+"""monodromy/io/inflate.py.
 
 Routines for re-inflating a previously exported coverage set.
 """
@@ -7,15 +6,13 @@ Routines for re-inflating a previously exported coverage set.
 from collections import Counter
 from typing import Dict, List, Tuple
 
+from ..coordinates import monodromy_alcove_c2
 from ..xx_decompose.circuits import OperationPolytope
 from .base import CircuitPolytopeData
-from ..coordinates import monodromy_alcove_c2
 
 
 def inflate_scipy_data(deflated_data):
-    """
-    Re-inflates serialized coverage set data.
-    """
+    """Re-inflates serialized coverage set data."""
 
     coverage_set = {
         k: CircuitPolytopeData.inflate(v)
@@ -33,22 +30,22 @@ def inflate_scipy_data(deflated_data):
 
 
 def filter_scipy_data(
-        operations: List[OperationPolytope],
-        *,
-        coverage_set: Dict[Tuple, CircuitPolytopeData] = None,
-        precomputed_backsolutions: List[CircuitPolytopeData] = None,
-        chatty=True,
+    operations: List[OperationPolytope],
+    *,
+    coverage_set: Dict[Tuple, CircuitPolytopeData] = None,
+    precomputed_backsolutions: List[CircuitPolytopeData] = None,
+    chatty=True,
 ):
-    """
-    Attaches costs to the tables to be supplied to `MonodromyZXDecomposer`.
-    """
+    """Attaches costs to the tables to be supplied to
+    `MonodromyZXDecomposer`."""
     # reinflate the polytopes, simultaneously calculating their current cost
     inflated_polytopes = [
         CircuitPolytopeData(
             cost=sum([x * y.cost for x, y in zip(k, operations)]),
             convex_subpolytopes=v.convex_subpolytopes,
             operations=v.operations,
-        ) for k, v in coverage_set.items()
+        )
+        for k, v in coverage_set.items()
     ]
 
     # retain only the low-cost polytopes, discarding everything after a
@@ -58,10 +55,9 @@ def filter_scipy_data(
         if chatty:
             print(f"Keeping {'.'.join(polytope.operations)}: {polytope.cost}")
         cost_trimmed_polytopes.append(polytope)
-        if (set([tuple(x) for x in
-                 polytope.convex_subpolytopes[0].inequalities]) ==
-            set([tuple(x) for x in
-                 monodromy_alcove_c2.convex_subpolytopes[0].inequalities])):
+        if set([tuple(x) for x in polytope.convex_subpolytopes[0].inequalities]) == set(
+            [tuple(x) for x in monodromy_alcove_c2.convex_subpolytopes[0].inequalities]
+        ):
             break
 
     if chatty:
@@ -76,8 +72,10 @@ def filter_scipy_data(
         if chatty:
             print(f"Reconsidering {'.'.join(polytope.operations)}... ", end="")
         these_polytopes = [
-            (set([tuple(x) for x in cp.inequalities]),
-             set([tuple(y) for y in cp.equalities]))
+            (
+                set([tuple(x) for x in cp.inequalities]),
+                set([tuple(y) for y in cp.equalities]),
+            )
             for cp in polytope.convex_subpolytopes
         ]
         if all(p in seen_polytopes for p in these_polytopes):
@@ -94,10 +92,12 @@ def filter_scipy_data(
 
     # finally, re-inflate the relevant subset of the scipy precomputation.
     reinflated_scipy = []
-    coverage_trimmed_signatures = [Counter(x.operations)
-                                   for x in coverage_trimmed_polytopes]
+    coverage_trimmed_signatures = [
+        Counter(x.operations) for x in coverage_trimmed_polytopes
+    ]
     reinflated_scipy = [
-        x for x in precomputed_backsolutions
+        x
+        for x in precomputed_backsolutions
         if Counter(x.operations) in coverage_trimmed_signatures
     ]
 

@@ -1,5 +1,4 @@
-"""
-monodromy/io/deflate.py
+"""monodromy/io/deflate.py.
 
 Routines for deflating a coverage set for export.
 """
@@ -9,40 +8,44 @@ from typing import Dict, List
 
 from ..coordinates import monodromy_alcove_c2
 from ..coverage import CircuitPolytope, deduce_qlr_consequences
-from ..xx_decompose.precalculate import calculate_unordered_scipy_coverage_set
 from ..static import everything_polytope, identity_polytope
+from ..xx_decompose.precalculate import calculate_unordered_scipy_coverage_set
 
 
 def generate_deflated_coverage_data(
-        operations: List[CircuitPolytope],
-        chatty=True
+    operations: List[CircuitPolytope], chatty=True
 ) -> Dict:
-    """
-    Generates the deflated data tables used to prime the `MonodromyZXDecomposer`
-    compilation pass.  Returns a dictionary of relevant tables.
+    """Generates the deflated data tables used to prime the
+    `MonodromyZXDecomposer` compilation pass.
+
+    Returns a dictionary of relevant tables.
     """
     # Generate data for all possible combinations (with multiplicity) of
     # operations, stopping only when adding a gate does not improve coverage.
     buckets = [1] + [0] * (len(operations) - 1)
     coverage_set = {
-        (0,) * len(operations): CircuitPolytope(
-            cost=0.,
+        (0,)
+        * len(operations): CircuitPolytope(
+            cost=0.0,
             operations=[],
-            convex_subpolytopes=identity_polytope.convex_subpolytopes
+            convex_subpolytopes=identity_polytope.convex_subpolytopes,
         )
     }
 
     while True:
         if chatty:
-            print("Working on " +
-                  ', '.join(str(b) + ' ' + o.operations[0]
-                            for b, o in zip(buckets, operations)) +
-                  ".")
+            print(
+                "Working on "
+                + ", ".join(
+                    str(b) + " " + o.operations[0] for b, o in zip(buckets, operations)
+                )
+                + "."
+            )
         # find an antecedent CircuitPolytope (and edge) from coverage_set
-        first_nonzero_index = next((i for i, j in enumerate(buckets) if j != 0),
-                                   None)
-        decremented_tuple = tuple(j if i != first_nonzero_index else j - 1
-                                  for i, j in enumerate(buckets))
+        first_nonzero_index = next((i for i, j in enumerate(buckets) if j != 0), None)
+        decremented_tuple = tuple(
+            j if i != first_nonzero_index else j - 1 for i, j in enumerate(buckets)
+        )
         input_polytope = coverage_set[decremented_tuple]
         operation_polytope = operations[first_nonzero_index]
 
@@ -54,11 +57,15 @@ def generate_deflated_coverage_data(
             c_polytope=everything_polytope,
         )
         output_polytope = CircuitPolytope(
-            operations=sum([count * operation.operations
-                            for count, operation in zip(buckets, operations)],
-                           []),
-            cost=0.,
-            convex_subpolytopes=output_polytope.convex_subpolytopes
+            operations=sum(
+                [
+                    count * operation.operations
+                    for count, operation in zip(buckets, operations)
+                ],
+                [],
+            ),
+            cost=0.0,
+            convex_subpolytopes=output_polytope.convex_subpolytopes,
         )
 
         # stash this into coverage_set
@@ -83,11 +90,6 @@ def generate_deflated_coverage_data(
     )
 
     return {
-        "serialized_coverage_set": {
-            k: asdict(v)
-            for k, v in coverage_set.items()
-        },
-        "serialized_scipy_coverage_set": [
-            asdict(x) for x in scipy_coverage_set
-        ],
+        "serialized_coverage_set": {k: asdict(v) for k, v in coverage_set.items()},
+        "serialized_scipy_coverage_set": [asdict(x) for x in scipy_coverage_set],
     }

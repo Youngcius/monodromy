@@ -1,13 +1,12 @@
-"""
-monodromy/io/base.py
+"""monodromy/io/base.py.
 
 Bare dataclasses which house polytope information.
 """
 
 from dataclasses import dataclass, field
 from typing import List, Optional
-from qiskit.circuit import Instruction
 
+from qiskit.circuit import Instruction
 
 anonymous_convex_polytope_counter = 0
 
@@ -20,10 +19,9 @@ def generate_anonymous_cp_name():
 
 @dataclass
 class ConvexPolytopeData:
-    """
-    The raw data underlying a ConvexPolytope.  Describes a single convex
+    """The raw data underlying a ConvexPolytope.  Describes a single convex
     polytope, specified by families of `inequalities` and `equalities`, each
-    entry of which respectively corresponds to
+    entry of which respectively corresponds to.
 
         inequalities[j][0] + sum_i inequalities[j][i] * xi >= 0
 
@@ -38,26 +36,22 @@ class ConvexPolytopeData:
 
     @classmethod
     def inflate(cls, data):
-        """
-        Converts the `data` produced by `dataclasses.asdict` to a live object.
-        """
+        """Converts the `data` produced by `dataclasses.asdict` to a live
+        object."""
 
         return cls(**data)
 
 
 @dataclass
 class PolytopeData:
-    """
-    The raw data of a union of convex polytopes.
-    """
+    """The raw data of a union of convex polytopes."""
 
     convex_subpolytopes: List[ConvexPolytopeData]
 
     @classmethod
     def inflate(cls, data):
-        """
-        Converts the `data` produced by `dataclasses.asdict` to a live object.
-        """
+        """Converts the `data` produced by `dataclasses.asdict` to a live
+        object."""
 
         data = {
             **data,
@@ -65,7 +59,7 @@ class PolytopeData:
             "convex_subpolytopes": [
                 ConvexPolytopeData.inflate(x) if isinstance(x, dict) else x
                 for x in data["convex_subpolytopes"]
-            ]
+            ],
         }
 
         return cls(**data)
@@ -73,9 +67,9 @@ class PolytopeData:
 
 @dataclass
 class CircuitPolytopeData(PolytopeData):
-    """
-    A polytope describing the alcove coverage of a particular circuit type.
-    """
+    """A polytope describing the alcove coverage of a particular circuit
+    type."""
+
     cost: float
     operations: List[str]
     instructions: Optional[List[Instruction]] = field(default_factory=list)

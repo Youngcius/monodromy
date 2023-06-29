@@ -1,5 +1,4 @@
-"""
-monodromy/xx_decompose/precalculate.py
+"""monodromy/xx_decompose/precalculate.py.
 
 Precalculates the "backsolution" polytopes used for constructing right-angled
 paths.
@@ -13,17 +12,13 @@ from typing import List
 from ..coverage import prereduce_operation_polytopes
 from ..elimination import cylinderize
 from ..polytopes import ConvexPolytope, Polytope
-
 from .circuits import CircuitPolytope
 
 
 def calculate_unordered_scipy_coverage_set(
-        coverage_set: List[CircuitPolytope],
-        operations: List[CircuitPolytope],
-        chatty=False
+    coverage_set: List[CircuitPolytope], operations: List[CircuitPolytope], chatty=False
 ) -> List[CircuitPolytope]:
-    """
-    The terms in `coverage_set` are related by equations of the form
+    """The terms in `coverage_set` are related by equations of the form.
 
         P_(a1 ... a(n-1)) O_(an) = P_(a1 ... an),
 
@@ -52,37 +47,52 @@ def calculate_unordered_scipy_coverage_set(
     inflated_operation_polytope = prereduce_operation_polytopes(
         operations=operations,
         target_coordinate="a",
-        background_polytope=Polytope(convex_subpolytopes=[
-            # equate first source and first target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1,  1, 0, 0, 0, 0, -1, -1, 0],
-                [0, -1, -1, 0, 0, 0, 0,  1,  1, 0],
-            ]),
-            # equate first source and second target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1,  1, 0, 0, 0, 0, -1, 0, -1],
-                [0, -1, -1, 0, 0, 0, 0,  1, 0,  1],
-            ]),
-            # equate first source and third target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1,  1, 0, 0, 0, 0, 0, -1, -1],
-                [0, -1, -1, 0, 0, 0, 0, 0,  1,  1],
-            ]),
-            # equate second source and second target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1, 0,  1, 0, 0, 0, -1, 0, -1],
-                [0, -1, 0, -1, 0, 0, 0,  1, 0,  1],
-            ]),
-            # equate second source and third target coordinates
-            ConvexPolytope(inequalities=[
-                [0,  1, 0,  1, 0, 0, 0, 0, -1, -1],
-                [0, -1, 0, -1, 0, 0, 0, 0,  1,  1],
-            ]),
-            # equate third source and third target coordinates
-            ConvexPolytope(inequalities=[
-                [0, 0,  1,  1, 0, 0, 0, 0, -1, -1],
-                [0, 0, -1, -1, 0, 0, 0, 0,  1,  1],
-            ])]),
+        background_polytope=Polytope(
+            convex_subpolytopes=[
+                # equate first source and first target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 1, 0, 0, 0, 0, -1, -1, 0],
+                        [0, -1, -1, 0, 0, 0, 0, 1, 1, 0],
+                    ]
+                ),
+                # equate first source and second target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 1, 0, 0, 0, 0, -1, 0, -1],
+                        [0, -1, -1, 0, 0, 0, 0, 1, 0, 1],
+                    ]
+                ),
+                # equate first source and third target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 1, 0, 0, 0, 0, 0, -1, -1],
+                        [0, -1, -1, 0, 0, 0, 0, 0, 1, 1],
+                    ]
+                ),
+                # equate second source and second target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 0, 1, 0, 0, 0, -1, 0, -1],
+                        [0, -1, 0, -1, 0, 0, 0, 1, 0, 1],
+                    ]
+                ),
+                # equate second source and third target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 1, 0, 1, 0, 0, 0, 0, -1, -1],
+                        [0, -1, 0, -1, 0, 0, 0, 0, 1, 1],
+                    ]
+                ),
+                # equate third source and third target coordinates
+                ConvexPolytope(
+                    inequalities=[
+                        [0, 0, 1, 1, 0, 0, 0, 0, -1, -1],
+                        [0, 0, -1, -1, 0, 0, 0, 0, 1, 1],
+                    ]
+                ),
+            ]
+        ),
         chatty=chatty,
     )
 
@@ -107,42 +117,52 @@ def calculate_unordered_scipy_coverage_set(
 
             # otherwise, locate an up-to-reordering ancestor.
             ancestor_polytope = next(
-                (polytope for polytope in coverage_set
-                 if Counter(descendant_polytope.operations) ==
-                    Counter([operation] + polytope.operations)),
-                None
+                (
+                    polytope
+                    for polytope in coverage_set
+                    if Counter(descendant_polytope.operations)
+                    == Counter([operation] + polytope.operations)
+                ),
+                None,
             )
             if ancestor_polytope is None:
                 if chatty:
-                    print(f"{'.'.join(descendant_polytope.operations)} has no "
-                          f"ancestor along {operation}.")
+                    print(
+                        f"{'.'.join(descendant_polytope.operations)} has no "
+                        f"ancestor along {operation}."
+                    )
                     print("Available coverage set entries:")
                     for x in coverage_set:
                         print(f"{'.'.join(x.operations)}")
-                raise ValueError(f"{'.'.join(descendant_polytope.operations)} "
-                                 f"has no ancestor along {operation}.")
+                raise ValueError(
+                    f"{'.'.join(descendant_polytope.operations)} "
+                    f"has no ancestor along {operation}."
+                )
 
             if chatty:
-                print(f"    ... backtracking along {operation} to "
-                      f"{'.'.join(ancestor_polytope.operations)}...")
+                print(
+                    f"    ... backtracking along {operation} to "
+                    f"{'.'.join(ancestor_polytope.operations)}..."
+                )
 
             # also impose whatever constraints we were given besides
-            backsolution_polytope = inflated_operation_polytope[operation] \
-                .intersect(cylinderize(
-                    ancestor_polytope,
-                    coordinates["a"],
-                    parent_dimension=7
-                )) \
+            backsolution_polytope = (
+                inflated_operation_polytope[operation]
+                .intersect(
+                    cylinderize(ancestor_polytope, coordinates["a"], parent_dimension=7)
+                )
                 .reduce()
+            )
 
-            scipy_coverage_set.append(CircuitPolytope(
-                convex_subpolytopes=backsolution_polytope.convex_subpolytopes,
-                cost=descendant_polytope.cost,
-                operations=ancestor_polytope.operations + [operation],
-            ))
+            scipy_coverage_set.append(
+                CircuitPolytope(
+                    convex_subpolytopes=backsolution_polytope.convex_subpolytopes,
+                    cost=descendant_polytope.cost,
+                    operations=ancestor_polytope.operations + [operation],
+                )
+            )
 
     return scipy_coverage_set
-
 
 
 #
@@ -150,15 +170,12 @@ def calculate_unordered_scipy_coverage_set(
 #
 
 
-def single_unordered_decomposition_hop(
-    target, working_operations, scipy_coverage_set
-):
-    """
-    Produces a single inverse step in a right-angled path.  The target of the
-    step is `target`, expressed in monodromy coordinates, and which belongs to
-    to the circuit type consisting of XX-type operations enumerated in
+def single_unordered_decomposition_hop(target, working_operations, scipy_coverage_set):
+    """Produces a single inverse step in a right-angled path.  The target of
+    the step is `target`, expressed in monodromy coordinates, and which belongs
+    to to the circuit type consisting of XX-type operations enumerated in
     `working_operations`.  The step is taken along one such operation in
-    `working_operations`, and the source of the step belongs
+    `working_operations`, and the source of the step belongs.
 
     Returns a dictionary keyed on "hop", "ancestor", and "operations_remaining",
     which respectively are: a triple (source, operation, target) describing the
@@ -179,13 +196,21 @@ def single_unordered_decomposition_hop(
         backsolution_polytope.convex_subpolytopes += [
             ConvexPolytopeData(
                 inequalities=[
-                    [ineq[0] + sum(x * y for x, y in zip(ineq[4:], target)),
-                     ineq[1], ineq[2], ineq[3]]
+                    [
+                        ineq[0] + sum(x * y for x, y in zip(ineq[4:], target)),
+                        ineq[1],
+                        ineq[2],
+                        ineq[3],
+                    ]
                     for ineq in cp.inequalities
                 ],
                 equalities=[
-                    [eq[0] + sum(x * y for x, y in zip(eq[4:], target)),
-                     eq[1], eq[2], eq[3]]
+                    [
+                        eq[0] + sum(x * y for x, y in zip(eq[4:], target)),
+                        eq[1],
+                        eq[2],
+                        eq[3],
+                    ]
                     for eq in cp.equalities
                 ],
             )
@@ -200,7 +225,7 @@ def single_unordered_decomposition_hop(
             return {
                 "hop": (solution, ancestor.operations[-1], target),
                 "ancestor": solution,
-                "operations_remaining": ancestor.operations[:-1]
+                "operations_remaining": ancestor.operations[:-1],
             }
         except NoFeasibleSolutions:
             pass

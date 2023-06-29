@@ -1,19 +1,16 @@
-"""
-monodromy/volume.py
+"""monodromy/volume.py.
 
 Helper routines for efficiently calculating the volume of a `Polytope`,
 presented as a union of `ConvexPolytope`s.
 """
 
-from monodromy.utilities import bitcount, bit_iteration, bitscatter
+from monodromy.utilities import bit_iteration, bitcount, bitscatter
 
 
 def bitmask_iterator(mask, determined_bitmask, total_bitcount, negative_bitmasks):
-    """
-    Yields bitstrings of length `total_bitcount` which match `mask`
-    on the raised bits in `determined_bitmask` and which _do not_ wholly
-    match any of the masks in `negative_bitmasks`.
-    """
+    """Yields bitstrings of length `total_bitcount` which match `mask` on the
+    raised bits in `determined_bitmask` and which _do not_ wholly match any of
+    the masks in `negative_bitmasks`."""
     undetermined_bitmask = determined_bitmask ^ ((1 << total_bitcount) - 1)
     if 0 == len(negative_bitmasks):
         remaining_bitcount = total_bitcount - bitcount(determined_bitmask)
@@ -23,17 +20,15 @@ def bitmask_iterator(mask, determined_bitmask, total_bitcount, negative_bitmasks
     else:
         negative_bitmask, rest = negative_bitmasks[0], negative_bitmasks[1:]
         # ensure that it's possible to find any non-matches
-        if ((negative_bitmask & determined_bitmask == negative_bitmask) and
-            (negative_bitmask & mask == negative_bitmask)):
+        if (negative_bitmask & determined_bitmask == negative_bitmask) and (
+            negative_bitmask & mask == negative_bitmask
+        ):
             return
 
         # if we're wholly determined, just recurse
         if negative_bitmask & determined_bitmask == negative_bitmask:
             yield from bitmask_iterator(
-                mask,
-                determined_bitmask | negative_bitmask,
-                total_bitcount,
-                rest
+                mask, determined_bitmask | negative_bitmask, total_bitcount, rest
             )
             return
 
@@ -48,14 +43,14 @@ def bitmask_iterator(mask, determined_bitmask, total_bitcount, negative_bitmasks
                 augmented_mask,
                 determined_bitmask | negative_bitmask,
                 total_bitcount,
-                rest
+                rest,
             )
 
 
 def alternating_sum(polytope, volume_fn):
-    """
-    Efficiently computes the inclusion-exclusion alternating sum for the volume
-    of a `Polytope`, as computed by `volume_fn` on its convex intersections.
+    """Efficiently computes the inclusion-exclusion alternating sum for the
+    volume of a `Polytope`, as computed by `volume_fn` on its convex
+    intersections.
 
     `volume_fn` is required to be:
 
@@ -96,32 +91,40 @@ def alternating_sum(polytope, volume_fn):
     for d in range(len(polytope.convex_subpolytopes)):
         volumes = {}
         did_work = False
-        for bitstring in bit_iteration(length=len(polytope.convex_subpolytopes),
-                                       weight=1 + d):
+        for bitstring in bit_iteration(
+            length=len(polytope.convex_subpolytopes), weight=1 + d
+        ):
             # if this is guaranteed to be zero, skip it
             if any([mask & bitstring == mask for mask in vanishing_masks]):
                 continue
 
             # if this belongs to an alternating skip, skip it
-            if any([mask & bitstring == mask
-                    for mask, toggle in alternating_masks]):
+            if any([mask & bitstring == mask for mask, toggle in alternating_masks]):
                 continue
 
             # if this is inheritable from the previous stage, inherit it
             for mask, toggle in alternating_masks:
                 previous_volume = previous_volumes.get(bitstring ^ toggle, None)
-                if ((mask & bitstring == mask) and (bitstring & toggle != 0)
-                        and previous_volume is not None):
+                if (
+                    (mask & bitstring == mask)
+                    and (bitstring & toggle != 0)
+                    and previous_volume is not None
+                ):
                     volumes[bitstring] = previous_volume
                     break
 
             # if that failed, calculate from scratch
             if volumes.get(bitstring, None) is None:
                 intersection = None
-                for index, convex_subpolytope in enumerate(polytope.convex_subpolytopes):
+                for index, convex_subpolytope in enumerate(
+                    polytope.convex_subpolytopes
+                ):
                     if 0 != (bitstring & (1 << index)):
-                        intersection = convex_subpolytope if intersection is None \
+                        intersection = (
+                            convex_subpolytope
+                            if intersection is None
                             else intersection.intersect(convex_subpolytope)
+                        )
                 volumes[bitstring] = volume_fn(intersection)
                 volume_fn_calls += 1
 
@@ -152,13 +155,13 @@ def alternating_sum(polytope, volume_fn):
                     total_volume = total_volume + volumes[bitstring]
                 break
 
-        for bitstring in bit_iteration(length=len(polytope.convex_subpolytopes),
-                                       weight=1+d):
+        for bitstring in bit_iteration(
+            length=len(polytope.convex_subpolytopes), weight=1 + d
+        ):
             volume = volumes.get(bitstring, None)
             if volume is None:
                 continue
-            if any([mask & bitstring == mask
-                    for mask, toggle in alternating_masks]):
+            if any([mask & bitstring == mask for mask, toggle in alternating_masks]):
                 continue
 
             did_work = True
@@ -186,22 +189,30 @@ def alternating_sum(polytope, volume_fn):
                 continue
             for bitstring in bitmask_iterator(
                 # jth mask matches bitstring, kth mask matches only after toggle
-                mask | (kth_mask ^ toggle), mask | kth_mask,
+                mask | (kth_mask ^ toggle),
+                mask | kth_mask,
                 # expect masks of this size
                 len(polytope.convex_subpolytopes),
                 # masks in [0, k) don't match and don't include the toggle
-                [earlier_mask & -(toggle + 1) for
-                 earlier_mask, _ in alternating_masks[:k]] +
+                [
+                    earlier_mask & -(toggle + 1)
+                    for earlier_mask, _ in alternating_masks[:k]
+                ]
+                +
                 # masks in (k, j) don't match, regardless of toggle
-                [earlier_mask for earlier_mask, _ in alternating_masks[1+k:j]] +
-                vanishing_masks
+                [earlier_mask for earlier_mask, _ in alternating_masks[1 + k : j]]
+                + vanishing_masks,
             ):
                 intersection = None
                 for index, convex_subpolytope in enumerate(
-                        polytope.convex_subpolytopes):
+                    polytope.convex_subpolytopes
+                ):
                     if 0 != (bitstring & (1 << index)):
-                        intersection = convex_subpolytope if intersection is None \
-                                else intersection.intersect(convex_subpolytope)
+                        intersection = (
+                            convex_subpolytope
+                            if intersection is None
+                            else intersection.intersect(convex_subpolytope)
+                        )
 
                 volume_fn_calls += 1
                 if 1 == bitcount(bitstring) % 2:
@@ -214,22 +225,26 @@ def alternating_sum(polytope, volume_fn):
 
 # PEDAGOGICAL VALUE ONLY
 def naive_alternating_sum(polytope):
-    """
-    Inefficiently computes the Euclidean volume of a `Polytope` using the
-    inclusion-exclusion alternating.
-    """
+    """Inefficiently computes the Euclidean volume of a `Polytope` using the
+    inclusion-exclusion alternating."""
     total_volume = 0
 
     for d in range(len(polytope.convex_subpolytopes)):
         volumes = {}
-        for bitstring in bit_iteration(length=len(polytope.convex_subpolytopes),
-                                       weight=1 + d):
+        for bitstring in bit_iteration(
+            length=len(polytope.convex_subpolytopes), weight=1 + d
+        ):
             if volumes.get(bitstring, None) is None:
                 intersection = None
-                for index, convex_subpolytope in enumerate(polytope.convex_subpolytopes):
+                for index, convex_subpolytope in enumerate(
+                    polytope.convex_subpolytopes
+                ):
                     if 0 != (bitstring & (1 << index)):
-                        intersection = convex_subpolytope if intersection is None \
+                        intersection = (
+                            convex_subpolytope
+                            if intersection is None
                             else intersection.intersect(convex_subpolytope)
+                        )
                 volumes[bitstring] = intersection.volume
 
             if 1 == d % 2:

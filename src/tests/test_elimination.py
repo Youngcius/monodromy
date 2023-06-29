@@ -1,13 +1,12 @@
-"""
-test/test_elimination.py
+"""test/test_elimination.py.
 
 Tests for monodromy/elimination.py .
 """
 
-import qiskit
+
+import unittest
 
 import ddt
-import unittest
 
 from monodromy.coordinates import monodromy_alcove_c2_pcs
 from monodromy.elimination import *
@@ -21,19 +20,24 @@ class TestMonodromyElimination(unittest.TestCase):
     def test_cube_from_cylinders(self):
         """Build a cube out of cylinderized intervals."""
 
-        interval = make_convex_polytope([
-            [0, 1], [1, -1]
-        ])
+        interval = make_convex_polytope([[0, 1], [1, -1]])
 
-        cube = cylinderize(interval, [0, 1], 4) \
-            .intersect(cylinderize(interval, [0, 2], 4)) \
+        cube = (
+            cylinderize(interval, [0, 1], 4)
+            .intersect(cylinderize(interval, [0, 2], 4))
             .intersect(cylinderize(interval, [0, 3], 4))
+        )
 
-        expected = make_convex_polytope([
-            [0, 1, 0, 0], [1, -1,  0,  0],
-            [0, 0, 1, 0], [1,  0, -1,  0],
-            [0, 0, 0, 1], [1,  0,  0, -1],
-        ])
+        expected = make_convex_polytope(
+            [
+                [0, 1, 0, 0],
+                [1, -1, 0, 0],
+                [0, 0, 1, 0],
+                [1, 0, -1, 0],
+                [0, 0, 0, 1],
+                [1, 0, 0, -1],
+            ]
+        )
 
         self.assertTrue(cube.contains(expected))
         self.assertTrue(expected.contains(cube))

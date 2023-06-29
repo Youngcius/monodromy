@@ -1,10 +1,9 @@
-"""
-scripts/nuop.py
+"""scripts/nuop.py.
 
-This script compares the performance of our synthesis techniques with Lao et
-al.'s `NuOp` package:
-
-    https://github.com/prakashmurali/NuOp .
+This script compares the performance of our synthesis techniques with
+Lao et al.'s `NuOp` package:
+https://github.com/prakashmurali/NuOp
+.
 
 Unhappily, NuOp is not presently formulated as a package, so it's not so easy
 to include.  Additionally, it has some artificial constraints written into
@@ -14,20 +13,17 @@ Accordingly, we've copy/pasted the entire body of their package below.  Search
 for "# COMPARISON" to hop to where the script actually begins.
 """
 
-import qiskit
-
 from time import perf_counter
 
 import numpy as np
-from scipy.optimize import minimize
-from scipy.stats import unitary_group
-
+import qiskit
 from qiskit.circuit.library.standard_gates import RZZGate
 from qiskit.extensions.unitary import UnitaryGate
 from qiskit.quantum_info.synthesis.xx_decompose import XXDecomposer
+from scipy.optimize import minimize
+from scipy.stats import unitary_group
 
 from monodromy.utilities import epsilon
-
 
 results_filename = "nuop_stats.dat"
 gate_strength = np.pi / 4
@@ -39,94 +35,56 @@ gate_strength = np.pi / 4
 
 
 def cphase_gate(theta):
-    return np.matrix([
+    return np.matrix(
         [
-            1, 0, 0, 0
-        ],
-        [
-            0, 1, 0, 0
-        ],
-        [
-            0, 0, 1, 0
-        ],
-        [
-            0, 0, 0, np.cos(theta) + 1j * np.sin(theta)
-        ]])
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, np.cos(theta) + 1j * np.sin(theta)],
+        ]
+    )
 
 
 def cnot_gate():
-    return np.matrix([
-        [
-            1, 0, 0, 0
-        ],
-        [
-            0, 1, 0, 0
-        ],
-        [
-            0, 0, 0, 1
-        ],
-        [
-            0, 0, 1, 0
-        ]])
+    return np.matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
 
 def fsim_gate(theta, phi):
-    return np.matrix([
+    return np.matrix(
         [
-            1, 0, 0, 0
-        ],
-        [
-            0,
-            np.cos(theta),
-            -1j * np.sin(theta),
-            0
-        ],
-        [
-            0,
-            -1j * np.sin(theta),
-            np.cos(theta),
-            0
-        ],
-        [
-            0, 0, 0, np.cos(phi) - 1j * np.sin(phi)
-        ]])
+            [1, 0, 0, 0],
+            [0, np.cos(theta), -1j * np.sin(theta), 0],
+            [0, -1j * np.sin(theta), np.cos(theta), 0],
+            [0, 0, 0, np.cos(phi) - 1j * np.sin(phi)],
+        ]
+    )
 
 
 def xy_gate(theta):
-    return np.matrix([
+    return np.matrix(
         [
-            1, 0, 0, 0
-        ],
-        [
-            0,
-            np.cos(theta / 2),
-            1j * np.sin(theta / 2),
-            0
-        ],
-        [
-            0,
-            1j * np.sin(theta / 2),
-            np.cos(theta / 2),
-            0
-        ],
-        [
-            0, 0, 0, 1
+            [1, 0, 0, 0],
+            [0, np.cos(theta / 2), 1j * np.sin(theta / 2), 0],
+            [0, 1j * np.sin(theta / 2), np.cos(theta / 2), 0],
+            [0, 0, 0, 1],
         ]
-    ])
+    )
 
 
 def cz_gate():
-    return np.matrix([[1, 0, 0, 0],
-                      [0, 1, 0, 0],
-                      [0, 0, 1, 0],
-                      [0, 0, 0, -1]])
+    return np.matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
 
 def rzz_unitary(theta):
-    return np.array([[np.exp(-1j * theta / 2), 0, 0, 0],
-                     [0, np.exp(1j * theta / 2), 0, 0],
-                     [0, 0, np.exp(1j * theta / 2), 0],
-                     [0, 0, 0, np.exp(-1j * theta / 2)]], dtype=complex)
+    return np.array(
+        [
+            [np.exp(-1j * theta / 2), 0, 0, 0],
+            [0, np.exp(1j * theta / 2), 0, 0],
+            [0, 0, np.exp(1j * theta / 2), 0],
+            [0, 0, 0, np.exp(-1j * theta / 2)],
+        ],
+        dtype=complex,
+    )
 
 
 def get_gate_unitary_qiskit(gate_op):
@@ -147,10 +105,8 @@ def get_gate_unitary_qiskit(gate_op):
 
 
 class GateTemplate:
-    """
-    Creates a unitary matrix using a specified two-qubit gate, number of layers
-    and single-qubit rotation parameters
-    """
+    """Creates a unitary matrix using a specified two-qubit gate, number of
+    layers and single-qubit rotation parameters."""
 
     def __init__(self, two_qubit_gate, two_qubit_gate_params):
         """
@@ -163,15 +119,15 @@ class GateTemplate:
         self.two_qubit_gate_params = two_qubit_gate_params
 
     def u3_gate(self, theta, phi, lam):
-        return np.matrix([
+        return np.matrix(
             [
-                np.cos(theta / 2),
-                -np.exp(1j * lam) * np.sin(theta / 2)
-            ],
-            [
-                np.exp(1j * phi) * np.sin(theta / 2),
-                np.exp(1j * (phi + lam)) * np.cos(theta / 2)
-            ]])
+                [np.cos(theta / 2), -np.exp(1j * lam) * np.sin(theta / 2)],
+                [
+                    np.exp(1j * phi) * np.sin(theta / 2),
+                    np.exp(1j * (phi + lam)) * np.cos(theta / 2),
+                ],
+            ]
+        )
 
     def multiply_all(self, matrices):
         product = np.eye(4)
@@ -192,15 +148,14 @@ class GateTemplate:
         """
         gate_list = []
         idx = 0
-        gate_list.append(self.u3_layer(params[idx:idx + 6]))
+        gate_list.append(self.u3_layer(params[idx : idx + 6]))
         idx += 6
         for i in range(n_layers):
             if len(self.two_qubit_gate_params):
-                gate_list.append(
-                    self.two_qubit_gate(*self.two_qubit_gate_params))
+                gate_list.append(self.two_qubit_gate(*self.two_qubit_gate_params))
             else:
                 gate_list.append(self.two_qubit_gate())
-            gate_list.append(self.u3_layer(params[idx:idx + 6]))
+            gate_list.append(self.u3_layer(params[idx : idx + 6]))
             idx += 6
         return self.multiply_all(gate_list)
 
@@ -209,10 +164,8 @@ class GateTemplate:
 
 
 class TwoQubitGateSynthesizer:
-    """
-    Synthesises a gate implementation for a target unitary, using a specified
-    gate template
-    """
+    """Synthesises a gate implementation for a target unitary, using a
+    specified gate template."""
 
     def __init__(self, target_unitary, gate_template_obj):
         self.target_unitary = target_unitary
@@ -221,7 +174,7 @@ class TwoQubitGateSynthesizer:
     def unitary_distance_function(self, A, B):
         # return (1 - np.abs(np.sum(np.multiply(B,np.conj(np.transpose(A))))) / 4)
         # return (1 - (np.abs(np.sum(np.multiply(B,np.conj(A)))))**2+4 / 20)  # quantum volume paper
-        return (1 - np.abs(np.sum(np.multiply(B, np.conj(A)))) / 4)
+        return 1 - np.abs(np.sum(np.multiply(B, np.conj(A)))) / 4
 
     def make_cost_function(self, n_layers):
         target_unitary = self.target_unitary
@@ -244,19 +197,21 @@ class TwoQubitGateSynthesizer:
         self.cost_function = self.make_cost_function(n_layers)
         results = []
         best_idx = 0
-        best_val = float('inf')
+        best_val = float("inf")
         for i in range(trials):
             init = self.rand_initialize(n_layers)
-            res = minimize(self.cost_function, init, method='BFGS',
-                           options={'maxiter': 1000 * 30})
+            res = minimize(
+                self.cost_function, init, method="BFGS", options={"maxiter": 1000 * 30}
+            )
             results.append(res)
             if best_val > res.fun:
                 best_val = res.fun
                 best_idx = i
         return results[best_idx]
 
-    def optimal_decomposition(self, tol=1e-3, fidelity_2q_gate=1.0,
-                              fidelity_1q_gate=[1.0, 1.0]):
+    def optimal_decomposition(
+        self, tol=1e-3, fidelity_2q_gate=1.0, fidelity_1q_gate=[1.0, 1.0]
+    ):
         max_num_layers = 10
         cutoff_with_tol = True
         results = []
@@ -272,8 +227,9 @@ class TwoQubitGateSynthesizer:
             results.append(res)
 
             # Evaluate the fidelity after adding one layer
-            hw_fidelity = ((fidelity_1q_gate[0] * fidelity_1q_gate[1]) ** (2 + i)) * \
-                          (fidelity_2q_gate ** (i + 1))
+            hw_fidelity = ((fidelity_1q_gate[0] * fidelity_1q_gate[1]) ** (2 + i)) * (
+                fidelity_2q_gate ** (i + 1)
+            )
             unitary_fidelity = 1.0 - res.fun
             current_fidelity = hw_fidelity * unitary_fidelity
 
@@ -304,7 +260,7 @@ with open(results_filename, "w") as fh:
 for _ in range(1000):
     # generate a random special unitary
     u = unitary_group.rvs(4)
-    u /= np.linalg.det(u) ** (1/4)
+    u /= np.linalg.det(u) ** (1 / 4)
 
     # find the best exact and approximate points
     monodromy_time = perf_counter()
@@ -312,8 +268,9 @@ for _ in range(1000):
         u, approximate=False, basis_fidelity={gate_strength: 1.0}
     )
     monodromy_time = perf_counter() - monodromy_time
-    monodromy_depth = sum([isinstance(datum[0], qiskit.circuit.library.RZXGate)
-                           for datum in circuit.data])
+    monodromy_depth = sum(
+        [isinstance(datum[0], qiskit.circuit.library.RZXGate) for datum in circuit.data]
+    )
 
     nuop_time = perf_counter()
     nuop_depth, _, nuop_fidelity = TwoQubitGateSynthesizer(
@@ -324,6 +281,5 @@ for _ in range(1000):
     nuop_time = perf_counter() - nuop_time
 
     with open(results_filename, "a") as fh:
-        fh.write(f"{monodromy_depth} {monodromy_time} "
-                 f"{nuop_depth} {nuop_time}\n")
+        fh.write(f"{monodromy_depth} {monodromy_time} " f"{nuop_depth} {nuop_time}\n")
     print(monodromy_time, monodromy_depth, nuop_time, nuop_depth)

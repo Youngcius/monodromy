@@ -12,9 +12,9 @@ If single-qubit gates are considered to be "cheap", then it suffices to be able 
 The main result from [Peterson–Crooks–Smith](https://quantum-journal.org/papers/q-2020-03-26-247/) is:
 
 > **Theorem:** The set of triples $(a, b, c)$ for which there is a solution to
-> 
+>
 > $$\mathrm{local} \cdot \mathit{CAN}(a) \cdot \mathrm{local} \cdot \mathit{CAN}(b) \cdot \mathrm{local} = \mathit{CAN}(c)$$
-> 
+>
 > form a (3, 3, 3)-dimensional polytope with known presentation.
 
 The two questions initially posed above can be reduced to a restricted form of the equation appearing in the Theorem: for which $c$ does the equation
@@ -74,7 +74,7 @@ CZ_polytope = Polytope(convex_subpolytopes=[CZ_convex_subpolytope])
 The following snippet shows the (derived) attributes for `CZ_convex_subpolytope`:
 
 ```
-# CZ: 
+# CZ:
    -1 +     4 x1 +     0 x2 +     0 x3 == 0
    -1 +     0 x1 +     4 x2 +     0 x3 == 0
    -1 +     0 x1 +     0 x2 +    -4 x3 == 0
@@ -221,7 +221,7 @@ monodromy_to_positive_canonical_polytope(CZ_ISWAP_polytope)
 
 ```
 [
-# anonymous_convex_polytope_2: 
+# anonymous_convex_polytope_2:
     0 +     0 x1 +     0 x2 +     2 x3 >= 0
     0 +     0 x1 +     2 x2 +    -2 x3 >= 0
     0 +     2 x1 +    -2 x2 +     0 x3 >= 0
@@ -394,7 +394,7 @@ After quite a lot of work, the example above yields:
 
 ```
 Percent volume of A_C2	 | Cost	 | Sequence name
-  0.00% =    0/1    	 | 0.00	 | 
+  0.00% =    0/1    	 | 0.00	 |
   0.00% =    0/1    	 | 0.00	 | rzx(pi/2 * 1/3)
   0.00% =    0/1    	 | 0.00	 | rzx(pi/2 * 1/2)
   0.00% =    0/1    	 | 0.01	 | rzx(pi/2 * 1/3).rzx(pi/2 * 1/3)
@@ -465,7 +465,7 @@ The main idea is to leave the interaction strength as a variable and _not_ proje
 * [`regenerate_xx_solution_polytopes`](https://github.ibm.com/IBM-Q-Software/monodromy/blob/main/monodromy/static/interference.py#L273):
   Checks that our restricted choice of local gates and their associated "interference inequalities" add no extra constraints from the perspective of circuit polytopes.
   Also regenerates the polytope $P$ referenced in the proof and in the subsequent synthesis method.
-  
+
 These scripts are very time-expensive:
 
 ```
