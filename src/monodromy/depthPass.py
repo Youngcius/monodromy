@@ -32,11 +32,12 @@ class MonodromyDepth(AnalysisPass):
 
     _coverage_cache = {}  # Class level cache
 
-    def __init__(self, basis_gate: Instruction):
+    def __init__(self, basis_gate: Instruction, gate_cost: float = 1.0):
         super().__init__()
         assert basis_gate.num_qubits == 2, "Basis gate must be a 2Q gate."
         self.requires = [Collect2qBlocks(), ConsolidateBlocks(force_consolidate=True)]
         self.basis_gate = basis_gate
+        self.gate_cost = gate_cost
         self.chatty = True
         # Use the basis_gate as a key for the cache
         basis_gate_key = str(self.basis_gate)
@@ -60,7 +61,9 @@ class MonodromyDepth(AnalysisPass):
 
         # TODO, here could add functionality for multiple basis gates
         # just need to fix the cost function to account for relative durations
-        coverage_set = gates_to_coverage(self.basis_gate, sort=True)
+        coverage_set = gates_to_coverage(
+            self.basis_gate, costs=[self.gate_cost], sort=True
+        )
 
         # TODO: add some warning or fail condition if the coverage set fails to coverage
         # one way, (but there may be a more direct way) is to check if expected haar == 0
