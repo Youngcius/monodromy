@@ -13,6 +13,7 @@ from qiskit.circuit import Instruction, Parameter, QuantumCircuit
 from qiskit.quantum_info import Operator
 from qiskit.transpiler.exceptions import TranspilerError
 
+from monodromy.approximate import polytope_approx_contains
 from monodromy.coordinates import unitary_to_monodromy_coordinate
 from monodromy.static.examples import exactly
 
@@ -107,27 +108,6 @@ def gates_to_coverage(
     return coverage_set
 
 
-def _polytope_contains(
-    polytope: Polytope, target_coords: List[float], approximation_degree: float = 0.0
-) -> bool:
-    """Checks if a polytope contains a target gate.
-
-    Args:
-        polytope (Polytope): The polytope to check
-        target_coords (List[float]): The target gate to check as a monodromy coordinate
-        approximation_degree (float): The degree of approximation to use.
-    """
-    if approximation_degree == 0.0:
-        return polytope.has_element(target_coords)
-    else:
-        # find distance to closest point in polytope
-        # check fidelity between target gate and closest point
-        return False
-
-
-# TODO: here can implement approximate decomposition, e.g. instead of satisfying has_element,
-# the target gate just needs to be sufficiently close to the polytope.
-# find the point in the polytope that minimizes the distance -> maximizes fidelity.
 def coverage_lookup_operation(
     coverage_set: List[CircuitPolytope], target: Instruction
 ) -> Tuple[float, List]:
@@ -148,7 +128,7 @@ def coverage_lookup_operation(
 
     # iterate through coverage set, sorted by cost
     for circuit_polytope in coverage_set:
-        if _polytope_contains(circuit_polytope, target_coords):
+        if polytope_approx_contains(circuit_polytope, target_coords):
             return circuit_polytope.cost, circuit_polytope.instructions
 
     raise TranspilerError("Operation not found in coverage set.")
