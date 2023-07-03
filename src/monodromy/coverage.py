@@ -109,7 +109,7 @@ def gates_to_coverage(
 
 
 def coverage_lookup_operation(
-    coverage_set: List[CircuitPolytope], target: Instruction
+    coverage_set: List[CircuitPolytope], target: Instruction, approx_degree: float = 0.0
 ) -> Tuple[float, List]:
     """Calculates the cost of an operation.
 
@@ -117,6 +117,7 @@ def coverage_lookup_operation(
     Args:
         coverage_set (List[CircuitPolytope]): The coverage set to search
         target (Instruction): The operation to find the cost of
+        approx_degree (float): The degree of approximation to use when checking if the operation is contained in the coverage set
     Returns:
         (float, List): The cost of the operation and the list of operations that make up the circuit
     """
@@ -128,25 +129,32 @@ def coverage_lookup_operation(
 
     # iterate through coverage set, sorted by cost
     for circuit_polytope in coverage_set:
-        if polytope_approx_contains(circuit_polytope, target_coords):
+        if approx_degree == 0.0:
+            if circuit_polytope.has_element(target_coords):
+                return circuit_polytope.cost, circuit_polytope.instructions
+
+        elif polytope_approx_contains(circuit_polytope, target_coords, approx_degree):
             return circuit_polytope.cost, circuit_polytope.instructions
 
     raise TranspilerError("Operation not found in coverage set.")
 
 
 def target_build_ansatz(
-    coverage_set: List[CircuitPolytope], target: Instruction
+    coverage_set: List[CircuitPolytope], target: Instruction, approx_degree: float = 0.0
 ) -> QuantumCircuit:
     """Builds a decomposition ansatz given a target operation.
 
     Args:
         coverage_set (List[CircuitPolytope]): The coverage set to search
         target (Instruction): The operation to find the cost of
+        approx_degree (float): The degree of approximation to use when checking if the operation is contained in the coverage set
     Returns:
         QuantumCircuit: The ansatz circuit
     """
 
-    lookup = coverage_lookup_operation(coverage_set=coverage_set, target=target)
+    lookup = coverage_lookup_operation(
+        coverage_set=coverage_set, target=target, approx_degree=approx_degree
+    )
     print(f"Cost of {target.name} is {lookup[0]}")
     ops = lookup[1]
     ansatz = QuantumCircuit(2)
