@@ -195,9 +195,8 @@ class Polynomial:
 
 @dataclass
 class TrigPolynomial:
-    """
-    Models a term of the form (multivar. poly.) * trig_fn(linear poly.),
-    as arising in the expression for the Haar measure pushed forward to the
+    """Models a term of the form (multivar. poly.) * trig_fn(linear poly.), as
+    arising in the expression for the Haar measure pushed forward to the
     positive canonical alcove.
 
     NOTE: This could be extended to handle multiplication of terms, since

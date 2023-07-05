@@ -13,12 +13,12 @@ import lrcalc
 
 
 def qlr(r, k, a, b):
-    """
-    Computes the quantum Littlewood-Richardson coefficients N_{ab}^{c, d} in the
-    small quantum cohomology ring of the Grassmannian Gr(r, k).  For supplied
-    a and b, this computes the set of c and d for which N = 1.
+    """Computes the quantum Littlewood-Richardson coefficients N_{ab}^{c, d} in
+    the small quantum cohomology ring of the Grassmannian Gr(r, k).  For
+    supplied a and b, this computes the set of c and d for which N = 1.
 
-    Returns a dictionary of the form {c: d} over values where N_ab^{c, d} = 1.
+    Returns a dictionary of the form {c: d} over values where N_ab^{c,
+    d} = 1.
     """
     return {
         tuple(list(c) + [0] * (r - len(c))): (sum(a) + sum(b) - sum(c)) // (r + k)

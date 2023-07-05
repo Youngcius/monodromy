@@ -32,13 +32,35 @@ class MonodromyDepth(AnalysisPass):
 
     _coverage_cache = {}  # Class level cache
 
-    def __init__(self, basis_gate: Instruction, gate_cost: float = 1.0):
+    def __init__(
+        self, basis_gate: Instruction, gate_cost: float = 1.0, consolidate: bool = False
+    ):
+        """Initializes the MonodromyDepth pass.
+
+        Args:
+            basis_gate (Instruction): The 2-qubit basis gate to be used in
+                the cost analysis.
+            gate_cost (float, optional): The cost of the basis gate. Defaults
+                to 1.0.
+            consolidate (bool, optional): Whether to consolidate the 2-qubit
+                blocks in the CircuitDAG. Defaults to False.
+
+            XXX For correctness: consolidate should be True. It defaults to False under
+            the assumption that the pass manager has already included consolidation.
+        """
         super().__init__()
         assert basis_gate.num_qubits == 2, "Basis gate must be a 2Q gate."
-        self.requires = [Collect2qBlocks(), ConsolidateBlocks(force_consolidate=True)]
+
+        if consolidate:  # default False: assume pass manager has already done this
+            self.requires = [
+                Collect2qBlocks(),
+                ConsolidateBlocks(force_consolidate=True),
+            ]
+
         self.basis_gate = basis_gate
         self.gate_cost = gate_cost
         self.chatty = True
+
         # Use the basis_gate as a key for the cache
         basis_gate_key = str(self.basis_gate)
         if basis_gate_key in MonodromyDepth._coverage_cache:
@@ -82,10 +104,23 @@ class MonodromyDepth(AnalysisPass):
         :param dag: The CircuitDAG to be analyzed.
         :return: An updated CircuitDAG.
         """
+        # from qiskit.converters import dag_to_circuit
+        # print(dag_to_circuit(dag).draw(fold=-1))
+
         SCALE_FACTOR = 1000  # scale factor to convert floats to integers
 
+        # Keeping track of the last iteration saves nearly 50% of the time
+        last_lookup = (None, None)
+
         def weight_fn(_1, node, _2) -> int:
-            """Weight function for longest path algorithm."""
+            """Weight function for longest path algorithm.
+
+            Since this iterates over edges, every node is counted twice.
+            (Since every 2Q gate will have 2 incoming edges).
+            """
+            nonlocal last_lookup
+            if node == last_lookup[0]:
+                return last_lookup[1]
             target_node = dag._multi_graph[node]
             if not isinstance(target_node, DAGOpNode):
                 return 0
@@ -99,7 +134,9 @@ class MonodromyDepth(AnalysisPass):
                 float_cost = coverage_lookup_operation(
                     self.coverage_set, target_node.op
                 )[0]
-                return int(float_cost * SCALE_FACTOR)
+                int_cost = int(float_cost * SCALE_FACTOR)
+                last_lookup = (node, int_cost)
+                return int_cost
 
         longest_path_length = retworkx.dag_longest_path_length(
             dag._multi_graph, weight_fn=weight_fn

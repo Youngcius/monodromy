@@ -58,6 +58,10 @@ class ConvexPolytope(ConvexPolytopeData):
     NOTE: This object is meant to be read-only after instantiation.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._has_element_cache = {}
+
     @memoized_property
     def volume(self) -> PolytopeVolume:
         """(Top-dimensional) Euclidean volume of this convex body."""
@@ -121,7 +125,16 @@ class ConvexPolytope(ConvexPolytopeData):
 
     def has_element(self, point) -> bool:
         """Returns True when `point` belongs to `self`."""
-        return all(
+
+        # convert point to a tuple to make it hashable
+        point = tuple(point)
+
+        # check if the result is in the cache
+        if point in self._has_element_cache:
+            return self._has_element_cache[point]
+
+        # compute the result and store it in the cache
+        result = all(
             [
                 -epsilon
                 <= inequality[0] + sum(x * y for x, y in zip(point, inequality[1:]))
@@ -134,6 +147,9 @@ class ConvexPolytope(ConvexPolytopeData):
                 for equality in self.equalities
             ]
         )
+        self._has_element_cache[point] = result
+
+        return result
 
     def contains(self, other) -> bool:
         """Returns True when this convex body is contained in the right-hand
@@ -259,6 +275,7 @@ class Polytope(PolytopeData):
 
         return output
 
+    # @lru_cache(maxsize=25)
     def has_element(self, point) -> bool:
         """Returns T when point belongs to this Polytope."""
         return any([cp.has_element(point) for cp in self.convex_subpolytopes])
