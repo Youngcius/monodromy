@@ -74,10 +74,12 @@ def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPol
         c_polytope=everything_polytope,
     )
 
+    # FIXME, these parameters are grabbing the matrix elements of the gate
+    # we need a better way to distinguish between operators
     return CircuitPolytope(
         operations=[
             f"{operation.name}({operation.params[0]:.5f})"
-            if operation.params
+            if operation.params and len(operation.params) > 0
             else f"{operation.name}"
         ],
         instructions=[operation],
@@ -122,10 +124,13 @@ def coverage_lookup_operation(
         (float, List): The cost of the operation and the list of operations that make up the circuit
     """
     # convert gate to monodromy coordinate
-    try:
-        target_coords = unitary_to_monodromy_coordinate(target.to_matrix())
-    except AttributeError:
-        target_coords = unitary_to_monodromy_coordinate(Operator(target).data)
+    if hasattr(target, "_monodromy_coord") and target._monodromy_coord is not None:
+        target_coords = target._monodromy_coord
+    else:
+        try:
+            target_coords = unitary_to_monodromy_coordinate(target.to_matrix())
+        except AttributeError:
+            target_coords = unitary_to_monodromy_coordinate(Operator(target).data)
 
     # iterate through coverage set, sorted by cost
     for circuit_polytope in coverage_set:
