@@ -4,7 +4,7 @@ from functools import lru_cache
 import retworkx
 from qiskit.circuit import Instruction
 from qiskit.dagcircuit import DAGCircuit, DAGOpNode
-from qiskit.transpiler import AnalysisPass
+from qiskit.transpiler import AnalysisPass, TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes import Collect2qBlocks, ConsolidateBlocks
 
@@ -33,7 +33,11 @@ class MonodromyPass(AnalysisPass):
     _coverage_cache = {}  # Class level cache
 
     def __init__(
-        self, basis_gate: Instruction, gate_cost: float = 1.0, consolidate: bool = False
+        self,
+        basis_gate: Instruction,
+        gate_cost: float = 1.0,
+        consolidate: bool = False,
+        consolidator: TransformationPass = None,
     ):
         """Initializes the MonodromyDepth pass.
 
@@ -44,6 +48,8 @@ class MonodromyPass(AnalysisPass):
                 to 1.0.
             consolidate (bool, optional): Whether to consolidate the 2-qubit
                 blocks in the CircuitDAG. Defaults to False.
+            consolidator (TransformationPass, optional): The pass to use for
+                consolidation. Defaults to None.
 
             XXX For correctness: consolidate should be True. It defaults to False under
             the assumption that the pass manager has already included consolidation.
@@ -51,11 +57,16 @@ class MonodromyPass(AnalysisPass):
         super().__init__()
         assert basis_gate.num_qubits == 2, "Basis gate must be a 2Q gate."
 
-        if consolidate:  # default False: assume pass manager has already done this
-            self.requires = [
-                Collect2qBlocks(),
-                ConsolidateBlocks(force_consolidate=True),
-            ]
+        if (
+            consolidate or consolidator
+        ):  # default False: assume pass manager has already done this
+            if consolidator is None:
+                self.requires = [consolidator]
+            else:
+                self.requires = [
+                    Collect2qBlocks(),
+                    ConsolidateBlocks(force_consolidate=True),
+                ]
 
         self.basis_gate = basis_gate
         self.gate_cost = gate_cost

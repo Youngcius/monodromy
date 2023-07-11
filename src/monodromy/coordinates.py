@@ -421,6 +421,30 @@ def mirror_monodromy_polytope(polytope):
     return low_polytope.union(high_polytope).intersect(positive_canonical_alcove_c2)
 
 
+def verbose_mirror_monodromy_coordinate(coordinate):
+    can = monodromy_to_positive_canonical_coordinate(*coordinate[:-1])
+    mirror = mirror_positive_canonical_coordinate(can)
+    new_mono = positive_canonical_to_monodromy_coordinate(*mirror)
+    # d = -(a + b + c)
+    return [new_mono[0], new_mono[1], new_mono[2], -sum(new_mono)]
+
+
+def mirror_monodromy_coordinate(coordinate):
+    """Produces the SWAP-mirror of a monodromy coordinate."""
+    a, b, c, d = coordinate
+    if a + b <= np.pi**2 / 2:
+        a_prime = b / (np.pi**2) + (1.0 / 4)
+        b_prime = c / (np.pi**2) + (1.0 / 4)
+        c_prime = (1.0 / 4) - (a + b + c) / (np.pi**2)
+        d_prime = a / (np.pi**2) - (3.0 / 4)
+    else:
+        a_prime = 3.0 / 4 - (a + b + c) / (np.pi**2)
+        b_prime = a / (np.pi**2) - (1.0 / 4)
+        c_prime = b / (np.pi**2) - (1.0 / 4)
+        d_prime = c / (np.pi**2) + (1.0 / 4)
+    return [a_prime, b_prime, c_prime, d_prime]
+
+
 def monodromy_to_monodromy_pcs_polytope(polytope):
     """Converts a `polytope`, expressed in monodromy coordinates with the
     standard rho-normalization condition, to a polytope in monodromy
