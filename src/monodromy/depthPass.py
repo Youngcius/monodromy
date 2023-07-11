@@ -15,7 +15,7 @@ from monodromy.coverage import (
 )
 
 
-class MonodromyDepth(AnalysisPass):
+class MonodromyPass(AnalysisPass):
     """MonodromyDepth class extends the AnalysisPass to perform cost analysis
     on a given CircuitDAG with respect to a specified 2-qubit basis gate. This
     basis gate is crucial in calculating the minimum execution cost of 2-qubit
@@ -76,6 +76,10 @@ class MonodromyDepth(AnalysisPass):
         that can be formed by piecing together different instances of the basis
         gate.
 
+        The coverage set considers the relative durations of the gates
+        in the basis set so costs are already accounted in calls to
+        coverage_lookup_operation.
+
         :return: A CircuitPolytope object
         """
         if self.chatty:
@@ -95,15 +99,25 @@ class MonodromyDepth(AnalysisPass):
 
         return coverage_set
 
-    def run(self, dag: DAGCircuit) -> DAGCircuit:
-        """The run() method is the main entry point for the AnalysisPass. It
-        takes a CircuitDAG as input and returns an updated CircuitDAG. This
-        method applies the basis gate to the CircuitDAG, computes the cost of
-        the applied gate, and updates the CircuitDAG accordingly.
 
-        :param dag: The CircuitDAG to be analyzed.
-        :return: An updated CircuitDAG.
-        """
+class MonodromyTotal(MonodromyPass):
+    """MonodromyTotal calculates the total number of gates in a given
+    CircuitDAG, with respect to a specified 2-qubit basis gate."""
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        total_cost = 0
+        for gate_node in dag.two_qubit_ops():
+            total_cost += coverage_lookup_operation(self.coverage_set, gate_node.op)[0]
+        self.property_set["monodromy_total"] = total_cost
+
+
+class MonodromyDepth(MonodromyPass):
+    """MonodromyDepth calculates the depth of a given CircuitDAG with respect
+    to a specified 2-qubit basis gate."""
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        """Find longest_path by iterating over edges and using a weight
+        function."""
         # from qiskit.converters import dag_to_circuit
         # print(dag_to_circuit(dag).draw(fold=-1))
 
@@ -141,6 +155,7 @@ class MonodromyDepth(AnalysisPass):
         longest_path_length = retworkx.dag_longest_path_length(
             dag._multi_graph, weight_fn=weight_fn
         )
+
         # convert back to float
         longest_path_length /= SCALE_FACTOR
 
