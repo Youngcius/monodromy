@@ -123,14 +123,14 @@ class ConvexPolytope(ConvexPolytopeData):
             name=f"{self.name} ∩ {other.name}",
         )
 
-    def has_element(self, point) -> bool:
+    def has_element(self, point, use_fast_settings=True) -> bool:
         """Returns True when `point` belongs to `self`."""
 
         # convert point to a tuple to make it hashable
         point = tuple(point)
 
         # check if the result is in the cache
-        if point in self._has_element_cache:
+        if point in self._has_element_cache and use_fast_settings:
             return self._has_element_cache[point]
 
         # compute the result and store it in the cache
@@ -275,10 +275,14 @@ class Polytope(PolytopeData):
 
         return output
 
-    # @lru_cache(maxsize=25)
-    def has_element(self, point) -> bool:
+    def has_element(self, point, use_fast_settings=True) -> bool:
         """Returns T when point belongs to this Polytope."""
-        return any([cp.has_element(point) for cp in self.convex_subpolytopes])
+        return any(
+            [
+                cp.has_element(point, use_fast_settings)
+                for cp in self.convex_subpolytopes
+            ]
+        )
 
     def contains(self, other) -> bool:
         """Returns True when the other polytope is contained in this one."""

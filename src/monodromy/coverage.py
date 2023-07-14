@@ -111,7 +111,10 @@ def gates_to_coverage(
 
 
 def coverage_lookup_operation(
-    coverage_set: List[CircuitPolytope], target: Instruction, approx_degree: float = 0.0
+    coverage_set: List[CircuitPolytope],
+    target: Instruction,
+    approx_degree: float = 0.0,
+    use_fast_settings: bool = True,
 ) -> Tuple[float, List]:
     """Calculates the cost of an operation.
 
@@ -124,7 +127,11 @@ def coverage_lookup_operation(
         (float, List): The cost of the operation and the list of operations that make up the circuit
     """
     # convert gate to monodromy coordinate
-    if hasattr(target, "_monodromy_coord") and target._monodromy_coord is not None:
+    if (
+        hasattr(target, "_monodromy_coord")
+        and target._monodromy_coord is not None
+        and use_fast_settings
+    ):
         target_coords = target._monodromy_coord
     else:
         try:
@@ -135,7 +142,9 @@ def coverage_lookup_operation(
     # iterate through coverage set, sorted by cost
     for circuit_polytope in coverage_set:
         if approx_degree == 0.0:
-            if circuit_polytope.has_element(target_coords):
+            if circuit_polytope.has_element(
+                target_coords, use_fast_settings=use_fast_settings
+            ):
                 return circuit_polytope.cost, circuit_polytope.instructions
 
         elif polytope_approx_contains(circuit_polytope, target_coords, approx_degree):

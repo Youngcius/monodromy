@@ -38,6 +38,7 @@ class MonodromyPass(AnalysisPass):
         gate_cost: float = 1.0,
         consolidate: bool = False,
         consolidator: TransformationPass = None,
+        use_fast_settings: bool = True,
     ):
         """Initializes the MonodromyDepth pass.
 
@@ -71,6 +72,7 @@ class MonodromyPass(AnalysisPass):
         self.basis_gate = basis_gate
         self.gate_cost = gate_cost
         self.chatty = True
+        self.use_fast_settings = use_fast_settings
 
         # Use the basis_gate as a key for the cache
         basis_gate_key = str(self.basis_gate)
@@ -143,9 +145,10 @@ class MonodromyDepth(MonodromyPass):
             Since this iterates over edges, every node is counted twice.
             (Since every 2Q gate will have 2 incoming edges).
             """
-            nonlocal last_lookup
-            if node == last_lookup[0]:
-                return last_lookup[1]
+            if self.use_fast_settings:
+                nonlocal last_lookup
+                if node == last_lookup[0]:
+                    return last_lookup[1]
             target_node = dag._multi_graph[node]
             if not isinstance(target_node, DAGOpNode):
                 return 0
@@ -157,7 +160,9 @@ class MonodromyDepth(MonodromyPass):
                 raise TranspilerError("Operation not supported.")
             else:
                 float_cost = coverage_lookup_operation(
-                    self.coverage_set, target_node.op
+                    self.coverage_set,
+                    target_node.op,
+                    use_fast_settings=self.use_fast_settings,
                 )[0]
                 int_cost = int(float_cost * SCALE_FACTOR)
                 last_lookup = (node, int_cost)
