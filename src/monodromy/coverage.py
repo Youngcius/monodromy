@@ -110,6 +110,26 @@ def gates_to_coverage(
     return coverage_set
 
 
+# want to separate these functions from existing code
+# tricky because the hacky way to perform approx cost uses decomposition
+# cost? -> trial and error converge -> return k when success
+# but I would prefer if we would instead do cost -> decomposition at k.
+# this works for exact cost, but not approx cost. which means
+# (a) need to not make a mess of the existing code,
+# (b) refactor it later once have a better nearest coordinate function.
+# see https://github.com/evmckinney9/monodromy/issues/1
+
+
+# TODO
+def coverage_lookup_cost():
+    pass
+
+
+# TODO
+def coverage_lookup_decomposition():
+    pass
+
+
 def coverage_lookup_operation(
     coverage_set: List[CircuitPolytope],
     target: Instruction,
@@ -139,7 +159,8 @@ def coverage_lookup_operation(
         except AttributeError:
             target_coords = unitary_to_monodromy_coordinate(Operator(target).data)
 
-    # iterate through coverage set, sorted by cost
+    # iterate through coverage set
+    # XXX assume has been sorted by cost
     for circuit_polytope in coverage_set:
         if approx_degree == 0.0:
             if circuit_polytope.has_element(
