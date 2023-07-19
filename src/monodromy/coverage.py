@@ -118,6 +118,9 @@ def gates_to_coverage(
 # (a) need to not make a mess of the existing code,
 # (b) refactor it later once have a better nearest coordinate function.
 # see https://github.com/evmckinney9/monodromy/issues/1
+# be careful, we need to use approx_degree to represent total fidelity
+# idea is that threshold of accepting changes as function of instruction set
+# more expensive ansatz as a higher threshold of accepting approximations
 
 
 # TODO

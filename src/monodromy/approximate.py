@@ -174,6 +174,15 @@ def target_build_ansatz(instructions: List[Gate]) -> QuantumCircuit:
     return ansatz
 
 
+def numerical_decompose(circuit_polytope, target) -> QuantumCircuit:
+    """Finds the circuit parameterization to build target."""
+    ansatz = target_build_ansatz(circuit_polytope.instructions)
+    decomposer = Advanced2QDecomposer()
+    nearest_qc = decomposer.decompose_from_ansatz(target=target, ansatz=ansatz)
+    if decomposer.converged:
+        return nearest_qc
+
+
 def _nearest(circuit_polytope, target) -> List[float]:
     """Finds the nearest point to the target within a CircuitPolytope.
 
