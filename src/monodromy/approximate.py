@@ -7,6 +7,16 @@ from monodromy.coordinates import average_infidelity
 if TYPE_CHECKING:
     from monodromy.coverage import CircuitPolytope
 
+from qiskit import QuantumCircuit
+from qiskit.circuit import Gate
+from qiskit.circuit.parameter import Parameter
+from qiskit.quantum_info import Operator
+from transpile_benchy.utilities.numerical_decomp import Advanced2QDecomposer
+
+from monodromy.coordinates import (
+    monodromy_to_positive_canonical_coordinate,
+    unitary_to_monodromy_coordinate,
+)
 
 # def _quadratic_programming_nearest_point(polytope, target):
 #     """Compute the nearest point to a given target in a specified polytope,
@@ -127,10 +137,6 @@ if TYPE_CHECKING:
 #     else:
 #         return None
 
-from qiskit import QuantumCircuit
-from qiskit.circuit import Gate
-from qiskit.circuit.parameter import Parameter
-
 
 def target_build_ansatz(instructions: List[Gate]) -> QuantumCircuit:
     """Builds a decomposition ansatz given a target operation.
@@ -168,14 +174,6 @@ def target_build_ansatz(instructions: List[Gate]) -> QuantumCircuit:
     return ansatz
 
 
-from qiskit.quantum_info import Operator
-from transpile_benchy.utilities.numerical_decomp import Advanced2QDecomposer
-
-from monodromy.coordinates import unitary_to_monodromy_coordinate
-
-unitary_to_monodromy_coordinate
-
-
 def _nearest(circuit_polytope, target) -> List[float]:
     """Finds the nearest point to the target within a CircuitPolytope.
 
@@ -191,9 +189,6 @@ def _nearest(circuit_polytope, target) -> List[float]:
     nearest_qc = decomposer.decompose_from_ansatz(target=target, ansatz=ansatz)
     # convert qc back to coordinate in positive canonical form
     return unitary_to_monodromy_coordinate(Operator(nearest_qc).data)
-
-
-from monodromy.coordinates import monodromy_to_positive_canonical_coordinate
 
 
 def polytope_approx_contains(
