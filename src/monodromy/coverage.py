@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Dict, List, Optional, Tuple
 
-from qiskit.circuit import Instruction, Parameter, QuantumCircuit
+from qiskit.circuit import Instruction
 from qiskit.quantum_info import Operator
 from qiskit.transpiler.exceptions import TranspilerError
 
@@ -151,50 +151,6 @@ def coverage_lookup_operation(
             return circuit_polytope.cost, circuit_polytope.instructions
 
     raise TranspilerError("Operation not found in coverage set.")
-
-
-def target_build_ansatz(
-    coverage_set: List[CircuitPolytope], target: Instruction, approx_degree: float = 0.0
-) -> QuantumCircuit:
-    """Builds a decomposition ansatz given a target operation.
-
-    Args:
-        coverage_set (List[CircuitPolytope]): The coverage set to search
-        target (Instruction): The operation to find the cost of
-        approx_degree (float): The degree of approximation to use when checking if the operation is contained in the coverage set
-    Returns:
-        QuantumCircuit: The ansatz circuit
-    """
-
-    lookup = coverage_lookup_operation(
-        coverage_set=coverage_set, target=target, approx_degree=approx_degree
-    )
-    print(f"Cost of {target.name} is {lookup[0]}")
-    ops = lookup[1]
-    ansatz = QuantumCircuit(2)
-
-    # Begin with an empty operation to align the ops list with parameterized gates
-    ops = [None] + ops
-
-    for i, op in enumerate(ops):
-        if op is not None:
-            ansatz.append(op, [0, 1])
-
-        # Apply parameterized 1Q u gates
-        ansatz.u(
-            Parameter(rf"$\theta_{2*i}$"),
-            Parameter(rf"$\phi_{2*i}$"),
-            Parameter(rf"$\lambda_{2*i}$"),
-            0,
-        )
-        ansatz.u(
-            Parameter(rf"$\theta_{2*i+1}$"),
-            Parameter(rf"$\phi_{2*i+1}$"),
-            Parameter(rf"$\lambda_{2*i+1}$"),
-            1,
-        )
-
-    return ansatz
 
 
 def deduce_qlr_consequences(
