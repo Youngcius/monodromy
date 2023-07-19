@@ -9,7 +9,7 @@ from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes import Collect2qBlocks, ConsolidateBlocks
 
 from monodromy.coverage import (
-    coverage_lookup_operation,
+    coverage_lookup_cost,
     gates_to_coverage,
     print_coverage_set,
 )
@@ -91,7 +91,7 @@ class MonodromyPass(AnalysisPass):
 
         The coverage set considers the relative durations of the gates
         in the basis set so costs are already accounted in calls to
-        coverage_lookup_operation.
+        coverage_lookup_cost.
 
         :return: A CircuitPolytope object
         """
@@ -120,7 +120,7 @@ class MonodromyTotal(MonodromyPass):
     def run(self, dag: DAGCircuit) -> DAGCircuit:
         total_cost = 0
         for gate_node in dag.two_qubit_ops():
-            total_cost += coverage_lookup_operation(self.coverage_set, gate_node.op)[0]
+            total_cost += coverage_lookup_cost(self.coverage_set, gate_node.op)
         self.property_set["monodromy_total"] = total_cost
 
 
@@ -159,11 +159,11 @@ class MonodromyDepth(MonodromyPass):
             elif len(target_node.qargs) > 2:
                 raise TranspilerError("Operation not supported.")
             else:
-                float_cost = coverage_lookup_operation(
+                float_cost = coverage_lookup_cost(
                     self.coverage_set,
                     target_node.op,
                     use_fast_settings=self.use_fast_settings,
-                )[0]
+                )
                 int_cost = int(float_cost * SCALE_FACTOR)
                 last_lookup = (node, int_cost)
                 return int_cost

@@ -89,7 +89,7 @@ def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPol
 
 
 def gates_to_coverage(
-    *gates: Instruction, costs=None, sort=False
+    *gates: Instruction, costs=None, sort=True
 ) -> List[CircuitPolytope]:
     """Calculates coverage given a basis gate set."""
     for gate in gates:
@@ -102,7 +102,7 @@ def gates_to_coverage(
     operations = [
         _operation_to_circuit_polytope(gate, cost=c) for gate, c in zip(gates, costs)
     ]
-    coverage_set = build_coverage_set(operations, single_qubit_cost=0.0)
+    coverage_set = build_coverage_set(operations)
 
     if sort:
         return sorted(coverage_set, key=lambda k: k.cost)
@@ -124,19 +124,14 @@ def gates_to_coverage(
 
 
 # TODO
-def coverage_lookup_cost():
-    pass
-
-
-# TODO
 def coverage_lookup_decomposition():
-    pass
+    raise NotImplementedError
 
 
-def coverage_lookup_operation(
+def coverage_lookup_cost(
     coverage_set: List[CircuitPolytope],
     target: Instruction,
-    approx_degree: float = 0.0,
+    error_model=None,
     use_fast_settings: bool = True,
 ) -> Tuple[float, List]:
     """Calculates the cost of an operation.
@@ -147,7 +142,7 @@ def coverage_lookup_operation(
         target (Instruction): The operation to find the cost of
         approx_degree (float): The degree of approximation to use when checking if the operation is contained in the coverage set
     Returns:
-        (float, List): The cost of the operation and the list of operations that make up the circuit
+        float: The cost of the operation
     """
     # convert gate to monodromy coordinate
     if (
@@ -165,14 +160,23 @@ def coverage_lookup_operation(
     # iterate through coverage set
     # XXX assume has been sorted by cost
     for circuit_polytope in coverage_set:
+        if error_model is None:
+            approx_degree = 0.0
+        else:
+            approx_degree = error_model.infidelity(circuit_polytope.cost)
+
         if approx_degree == 0.0:
             if circuit_polytope.has_element(
                 target_coords, use_fast_settings=use_fast_settings
             ):
-                return circuit_polytope.cost, circuit_polytope.instructions
+                return circuit_polytope.cost
 
-        elif polytope_approx_contains(circuit_polytope, target_coords, approx_degree):
-            return circuit_polytope.cost, circuit_polytope.instructions
+        # FIXME, if not using decomposer trial and error, prefer to pass in coordinates
+        # because we rely on decomposition success, change parametr to be target
+        # instead of target_coords
+        # elif polytope_approx_contains(circuit_polytope, target_coords, approx_degree):
+        elif polytope_approx_contains(circuit_polytope, target, approx_degree):
+            return circuit_polytope.cost
 
     raise TranspilerError("Operation not found in coverage set.")
 
@@ -270,7 +274,6 @@ def prereduce_operation_polytopes(
 
 def build_coverage_set(
     operations: List[CircuitPolytope],
-    single_qubit_cost: float = 0.0,
     chatty: bool = False,
 ) -> List[CircuitPolytope]:
     """Given a set of `operations`, thought of as members of a native gate set,

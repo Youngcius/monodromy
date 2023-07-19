@@ -11,7 +11,7 @@ from qiskit import QuantumCircuit
 from qiskit.circuit import Gate
 from qiskit.circuit.parameter import Parameter
 from qiskit.quantum_info import Operator
-from transpile_benchy.utilities.numerical_decomp import Advanced2QDecomposer
+from transpile_benchy.utilities.numerical_decomp import BasicDecomposer
 
 from monodromy.coordinates import (
     monodromy_to_positive_canonical_coordinate,
@@ -177,10 +177,10 @@ def target_build_ansatz(instructions: List[Gate]) -> QuantumCircuit:
 def numerical_decompose(circuit_polytope, target) -> QuantumCircuit:
     """Finds the circuit parameterization to build target."""
     ansatz = target_build_ansatz(circuit_polytope.instructions)
-    decomposer = Advanced2QDecomposer()
+    # decomposer = Advanced2QDecomposer(basis_gates=None)
+    decomposer = BasicDecomposer(basis_gates=None)
     nearest_qc = decomposer.decompose_from_ansatz(target=target, ansatz=ansatz)
-    if decomposer.converged:
-        return nearest_qc
+    return nearest_qc
 
 
 def _nearest(circuit_polytope, target) -> List[float]:
@@ -193,16 +193,15 @@ def _nearest(circuit_polytope, target) -> List[float]:
     NOTE: this method is much much more expensive than methods above - but I have not figured
     out how to make them work yet.
     """
-    ansatz = target_build_ansatz(circuit_polytope.instructions)
-    decomposer = Advanced2QDecomposer()
-    nearest_qc = decomposer.decompose_from_ansatz(target=target, ansatz=ansatz)
+    nearest_qc = numerical_decompose(circuit_polytope, target)
     # convert qc back to coordinate in positive canonical form
     return unitary_to_monodromy_coordinate(Operator(nearest_qc).data)
 
 
 def polytope_approx_contains(
     polytope: CircuitPolytope,
-    point: List[float],
+    # point: List[float],
+    target: Gate,
     approximation_degree=0.0,
 ):
     """Checks if a polytope contains a point, with an optional degree of
@@ -211,22 +210,26 @@ def polytope_approx_contains(
     Args:
         polytope: The CircuitPolytope object.
         point: A numpy array representing the point to check (in monodromy coordinates)
-        approximation_degree: The allowed degree of approximation.
+        approximation_degree: The allowed degree of approximation (written as infidelity)
 
     Returns:
         True if the polytope contains the point or the infidelity between the point and the polytope
         is less than or equal to the approximation_degree, False otherwise.
     """
-    # If approximation_degree is 0.0, then we do an exact check
-    if approximation_degree == 0.0:
-        return polytope.has_element(point)
+    # # If approximation_degree is 0.0, then we do an exact check
+    # FIXME- assume has alreaedy been checked until target is coordinate instead of Gate
+    # if approximation_degree == 0.0:
+    #     return polytope.has_element(point)
 
     # find the point in the polytope that minimizes the distance -> maximizes fidelity
-    nearest = _nearest(polytope, point)
+    # nearest = _nearest(polytope, point)
+    nearest = _nearest(polytope, target)
 
     # need to convert point and nearest from monodromy coordinates to positive canonical form
-    point = monodromy_to_positive_canonical_coordinate(point)
-    nearest = monodromy_to_positive_canonical_coordinate(nearest)
+    # FIXME - get rid of this later
+    point = unitary_to_monodromy_coordinate(target.to_matrix())
+    point = monodromy_to_positive_canonical_coordinate(*point[:-1])
+    nearest = monodromy_to_positive_canonical_coordinate(*nearest[:-1])
 
     # Compute infidelity between the nearest point in the polytope and the point
     # If the infidelity is less than or equal to approximation_degree, then we say that the point is in the polytope
