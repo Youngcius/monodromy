@@ -9,11 +9,8 @@ from typing import List
 
 import numpy as np
 from qiskit.circuit import Instruction
-from qiskit.extensions import UnitaryGate
-from qiskit.quantum_info import random_unitary
-from tqdm import tqdm
 
-from monodromy.coverage import coverage_lookup_cost, gates_to_coverage
+from monodromy.coverage import gates_to_coverage
 
 from .coordinates import monodromy_to_positive_canonical_polytope
 from .io.base import CircuitPolytopeData
@@ -26,17 +23,6 @@ from .utilities import epsilon
 def gates_to_haar(*gates: Instruction):
     """Calculates the Haar score of a gate."""
     return expected_cost(gates_to_coverage(*gates))
-
-
-def coverage_to_approx_haar(coverage_set, error_model, N=100):
-    """Calculates Haar score - with approximate decompositions."""
-    running_cost = 0
-    # Monte-Carlo sampling of the Haar measure
-    for _ in tqdm(range(N)):
-        # generate a random unitary
-        target = UnitaryGate(random_unitary(4))
-        running_cost += coverage_lookup_cost(coverage_set, target, error_model)
-    return running_cost / N
 
 
 # duck typing means poor dispatching...

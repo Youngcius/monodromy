@@ -120,7 +120,7 @@ class MonodromyTotal(MonodromyPass):
     def run(self, dag: DAGCircuit) -> DAGCircuit:
         total_cost = 0
         for gate_node in dag.two_qubit_ops():
-            total_cost += coverage_lookup_cost(self.coverage_set, gate_node.op)
+            total_cost += coverage_lookup_cost(self.coverage_set, gate_node.op)[0]
         self.property_set["monodromy_total"] = total_cost
 
 
@@ -163,7 +163,7 @@ class MonodromyDepth(MonodromyPass):
                     self.coverage_set,
                     target_node.op,
                     use_fast_settings=self.use_fast_settings,
-                )
+                )[0]
                 int_cost = int(float_cost * SCALE_FACTOR)
                 last_lookup = (node, int_cost)
                 return int_cost

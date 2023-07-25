@@ -133,7 +133,7 @@ def coverage_lookup_cost(
     target: Instruction,
     error_model=None,
     use_fast_settings: bool = True,
-) -> Tuple[float, List]:
+) -> Tuple[float, float]:
     """Calculates the cost of an operation.
 
     Finds the cost of an operation by iterating through the coverage set, sorted by cost.
@@ -143,6 +143,7 @@ def coverage_lookup_cost(
         approx_degree (float): The degree of approximation to use when checking if the operation is contained in the coverage set
     Returns:
         float: The cost of the operation
+        float: Expected fidelity of the operation
     """
     # convert gate to monodromy coordinate
     if (
@@ -159,7 +160,12 @@ def coverage_lookup_cost(
 
     # iterate through coverage set
     # XXX assume has been sorted by cost
-    for circuit_polytope in coverage_set:
+    for polytope_index, circuit_polytope in enumerate(coverage_set):
+        if polytope_index == len(coverage_set) - 1:
+            # assume polytope completely covers the space
+            # so if we get here, must be contained in the last polytope
+            return circuit_polytope.cost, 1.0
+
         if error_model is None:
             approx_degree = 0.0
         else:
@@ -169,14 +175,17 @@ def coverage_lookup_cost(
             if circuit_polytope.has_element(
                 target_coords, use_fast_settings=use_fast_settings
             ):
-                return circuit_polytope.cost
-
-        # FIXME, if not using decomposer trial and error, prefer to pass in coordinates
-        # because we rely on decomposition success, change parametr to be target
-        # instead of target_coords
-        # elif polytope_approx_contains(circuit_polytope, target_coords, approx_degree):
-        elif polytope_approx_contains(circuit_polytope, target, approx_degree):
-            return circuit_polytope.cost
+                return circuit_polytope.cost, 1.0
+        else:
+            # FIXME, if not using decomposer trial and error, prefer to pass in coordinates
+            # because we rely on decomposition success, change parametr to be target
+            # instead of target_coords
+            # elif polytope_approx_contains(circuit_polytope, target_coords, approx_degree):
+            approx_bool, approx_infidelity = polytope_approx_contains(
+                circuit_polytope, target, approx_degree
+            )
+            if approx_bool:
+                return circuit_polytope.cost, 1.0 - approx_infidelity
 
     raise TranspilerError("Operation not found in coverage set.")
 

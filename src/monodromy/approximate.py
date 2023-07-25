@@ -174,16 +174,20 @@ def target_build_ansatz(instructions: List[Gate]) -> QuantumCircuit:
     return ansatz
 
 
-def numerical_decompose(circuit_polytope, target) -> QuantumCircuit:
+def numerical_decompose(
+    circuit_polytope, target, approximation_degree
+) -> QuantumCircuit:
     """Finds the circuit parameterization to build target."""
     ansatz = target_build_ansatz(circuit_polytope.instructions)
     # decomposer = Advanced2QDecomposer(basis_gates=None)
     decomposer = BasicDecomposer(basis_gates=None)
-    nearest_qc = decomposer.decompose_from_ansatz(target=target, ansatz=ansatz)
+    nearest_qc = decomposer.decompose_from_ansatz(
+        target=target, ansatz=ansatz, convergence_threshold=approximation_degree
+    )
     return nearest_qc
 
 
-def _nearest(circuit_polytope, target) -> List[float]:
+def _nearest(circuit_polytope, target, approximation_degree) -> List[float]:
     """Finds the nearest point to the target within a CircuitPolytope.
 
     Use numerical decomposition. Rather than optimze the outside point to the nearest
@@ -193,7 +197,7 @@ def _nearest(circuit_polytope, target) -> List[float]:
     NOTE: this method is much much more expensive than methods above - but I have not figured
     out how to make them work yet.
     """
-    nearest_qc = numerical_decompose(circuit_polytope, target)
+    nearest_qc = numerical_decompose(circuit_polytope, target, approximation_degree)
     # convert qc back to coordinate in positive canonical form
     return unitary_to_monodromy_coordinate(Operator(nearest_qc).data)
 
@@ -223,7 +227,7 @@ def polytope_approx_contains(
 
     # find the point in the polytope that minimizes the distance -> maximizes fidelity
     # nearest = _nearest(polytope, point)
-    nearest = _nearest(polytope, target)
+    nearest = _nearest(polytope, target, approximation_degree)
 
     # need to convert point and nearest from monodromy coordinates to positive canonical form
     # FIXME - get rid of this later
@@ -233,4 +237,5 @@ def polytope_approx_contains(
 
     # Compute infidelity between the nearest point in the polytope and the point
     # If the infidelity is less than or equal to approximation_degree, then we say that the point is in the polytope
-    return average_infidelity(nearest, point) <= approximation_degree
+    avg_infidelity = average_infidelity(nearest, point)
+    return avg_infidelity <= approximation_degree, avg_infidelity
