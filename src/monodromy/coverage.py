@@ -142,8 +142,8 @@ def coverage_lookup_cost(
         coverage_set (List[CircuitPolytope]): The coverage set to search
         target (Instruction): The operation to find the cost of
         error_model (ErrorModel): Model to use when calculating fidelity from time costs
-        approx_degree (float): The degree of approximation to use when checking
-            if the operation is contained in the coverage set
+        allow_approx (bool): Whether to allow approximation of the operation
+        use_fast_settings (bool): Whether to use fast settings for polytope
     Returns:
         float: The cost of the operation
         float: Expected fidelity of the operation,
@@ -177,7 +177,7 @@ def coverage_lookup_cost(
 
     # if not allowing approximations, return exact decomposition
     if not allow_approx or error_model is None:
-        polytope_fid = error_model.fidelity(exact_polytope.cost)
+        polytope_fid = error_model.fidelity(exact_polytope.cost) if error_model else 1.0
         exact_fid = polytope_fid * exact_decomp_fidelity
         return exact_polytope.cost, exact_fid
 
@@ -193,7 +193,7 @@ def coverage_lookup_cost(
     for polytope_index, circuit_polytope in enumerate(coverage_set):
         if polytope_index == len(coverage_set) - 1:
             return circuit_polytope.cost, error_model.fidelity(exact_polytope.cost)
-        
+
         # case when approx can no longer do better
         if circuit_polytope.cost >= exact_polytope.cost:
             return exact_polytope.cost, approx_degree
