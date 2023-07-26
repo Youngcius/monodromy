@@ -181,7 +181,7 @@ def coverage_lookup_cost(
         return exact_polytope.cost, polytope_fid * exact_decomp_fidelity
 
     # else set approx_degree to be set from polytope cost
-    approx_degree = error_model.infidelity(exact_polytope.cost)
+    approx_degree = error_model.fidelity(exact_polytope.cost)
 
     # check special case, no approximation improvement possible
     if approx_degree == 0.0:
