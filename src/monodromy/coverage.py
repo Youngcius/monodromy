@@ -178,10 +178,11 @@ def coverage_lookup_cost(
     # if not allowing approximations, return exact decomposition
     if not allow_approx or error_model is None:
         polytope_fid = error_model.fidelity(exact_polytope.cost)
-        return exact_polytope.cost, polytope_fid * exact_decomp_fidelity
+        exact_fid = polytope_fid * exact_decomp_fidelity
+        return exact_polytope.cost, exact_fid
 
     # else set approx_degree to be set from polytope cost
-    approx_degree = error_model.fidelity(exact_polytope.cost)
+    approx_degree = error_model.fidelity(exact_polytope.cost) * exact_decomp_fidelity
 
     # check special case, no approximation improvement possible
     if approx_degree == 0.0:
@@ -192,6 +193,10 @@ def coverage_lookup_cost(
     for polytope_index, circuit_polytope in enumerate(coverage_set):
         if polytope_index == len(coverage_set) - 1:
             return circuit_polytope.cost, error_model.fidelity(exact_polytope.cost)
+        
+        # case when approx can no longer do better
+        if circuit_polytope.cost >= exact_polytope.cost:
+            return exact_polytope.cost, approx_degree
 
         polytope_fid = error_model.fidelity(circuit_polytope.cost)
         approx_decomp_fid = polytope_approx_decomp_fidelity(circuit_polytope, target)
