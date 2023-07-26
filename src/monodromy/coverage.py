@@ -13,7 +13,7 @@ from qiskit.circuit import Instruction
 from qiskit.quantum_info import Operator
 from qiskit.transpiler.exceptions import TranspilerError
 
-from monodromy.approximate import polytope_approx_contains
+from monodromy.approximate import polytope_approx_decomp_fidelity
 from monodromy.coordinates import unitary_to_monodromy_coordinate
 from monodromy.static.examples import exactly
 
@@ -123,7 +123,7 @@ def gates_to_coverage(
 # more expensive ansatz as a higher threshold of accepting approximations
 
 
-# TODO
+# TODO?
 def coverage_lookup_decomposition():
     raise NotImplementedError
 
@@ -132,18 +132,22 @@ def coverage_lookup_cost(
     coverage_set: List[CircuitPolytope],
     target: Instruction,
     error_model=None,
+    allow_approx=False,
     use_fast_settings: bool = True,
 ) -> Tuple[float, float]:
     """Calculates the cost of an operation.
 
-    Finds the cost of an operation by iterating through the coverage set, sorted by cost.
+    Find the cost of an operation by iterating through the coverage set, sorted by cost.
     Args:
         coverage_set (List[CircuitPolytope]): The coverage set to search
         target (Instruction): The operation to find the cost of
-        approx_degree (float): The degree of approximation to use when checking if the operation is contained in the coverage set
+        error_model (ErrorModel): Model to use when calculating fidelity from time costs
+        approx_degree (float): The degree of approximation to use when checking
+            if the operation is contained in the coverage set
     Returns:
         float: The cost of the operation
-        float: Expected fidelity of the operation
+        float: Expected fidelity of the operation,
+            total fidelity = fidelity(circuit cost) * fidelity(decomposition)
     """
     # convert gate to monodromy coordinate
     if (
@@ -158,34 +162,41 @@ def coverage_lookup_cost(
         except AttributeError:
             target_coords = unitary_to_monodromy_coordinate(Operator(target).data)
 
-    # iterate through coverage set
+    # iterate through coverage set to find exact decomposition polytope
     # XXX assume has been sorted by cost
+    exact_polytope, exact_decomp_fidelity = None, None
+    for polytope_index, circuit_polytope in enumerate(coverage_set):
+        # assume if last polytope, then must be contained
+        if polytope_index == len(coverage_set) - 1:
+            exact_polytope, exact_decomp_fidelity = circuit_polytope, 1.0
+        if circuit_polytope.has_element(
+            target_coords, use_fast_settings=use_fast_settings
+        ):
+            exact_polytope, exact_decomp_fidelity = circuit_polytope, 1.0
+            break
+
+    # if not allowing approximations, return exact decomposition
+    if not allow_approx or error_model is None:
+        polytope_fid = error_model.fidelity(exact_polytope.cost)
+        return exact_polytope.cost, polytope_fid * exact_decomp_fidelity
+
+    # else set approx_degree to be set from polytope cost
+    approx_degree = error_model.infidelity(exact_polytope.cost)
+
+    # check special case, no approximation improvement possible
+    if approx_degree == 0.0:
+        return exact_polytope.cost, 1.0
+
+    # iterate through coverage set again
+    # look for approximate decomp that outperforms approx_degree infidelity
     for polytope_index, circuit_polytope in enumerate(coverage_set):
         if polytope_index == len(coverage_set) - 1:
-            # assume polytope completely covers the space
-            # so if we get here, must be contained in the last polytope
-            return circuit_polytope.cost, 1.0
+            return circuit_polytope.cost, error_model.fidelity(exact_polytope.cost)
 
-        if error_model is None:
-            approx_degree = 0.0
-        else:
-            approx_degree = error_model.infidelity(circuit_polytope.cost)
-
-        if approx_degree == 0.0:
-            if circuit_polytope.has_element(
-                target_coords, use_fast_settings=use_fast_settings
-            ):
-                return circuit_polytope.cost, 1.0
-        else:
-            # FIXME, if not using decomposer trial and error, prefer to pass in coordinates
-            # because we rely on decomposition success, change parametr to be target
-            # instead of target_coords
-            # elif polytope_approx_contains(circuit_polytope, target_coords, approx_degree):
-            approx_bool, approx_infidelity = polytope_approx_contains(
-                circuit_polytope, target, approx_degree
-            )
-            if approx_bool:
-                return circuit_polytope.cost, 1.0 - approx_infidelity
+        polytope_fid = error_model.fidelity(circuit_polytope.cost)
+        approx_decomp_fid = polytope_approx_decomp_fidelity(circuit_polytope, target)
+        if approx_decomp_fid * polytope_fid > approx_degree:
+            return circuit_polytope.cost, approx_decomp_fid * polytope_fid
 
     raise TranspilerError("Operation not found in coverage set.")
 
