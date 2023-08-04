@@ -128,6 +128,24 @@ def coverage_lookup_decomposition():
     raise NotImplementedError
 
 
+def convert_gate_to_monodromy_coordinate(
+    gate: Instruction, use_fast_settings: bool = True
+) -> List[Fraction]:
+    """Converts a gate to a monodromy coordinate."""
+    # convert gate to monodromy coordinate
+    if (
+        hasattr(gate, "_monodromy_coord")
+        and gate._monodromy_coord is not None
+        and use_fast_settings
+    ):
+        return gate._monodromy_coord
+    else:
+        try:
+            return unitary_to_monodromy_coordinate(gate.to_matrix())
+        except AttributeError:
+            return unitary_to_monodromy_coordinate(Operator(gate).data)
+
+
 def coverage_lookup_cost(
     coverage_set: List[CircuitPolytope],
     target: Instruction,
@@ -149,18 +167,8 @@ def coverage_lookup_cost(
         float: Expected fidelity of the operation,
             total fidelity = fidelity(circuit cost) * fidelity(decomposition)
     """
-    # convert gate to monodromy coordinate
-    if (
-        hasattr(target, "_monodromy_coord")
-        and target._monodromy_coord is not None
-        and use_fast_settings
-    ):
-        target_coords = target._monodromy_coord
-    else:
-        try:
-            target_coords = unitary_to_monodromy_coordinate(target.to_matrix())
-        except AttributeError:
-            target_coords = unitary_to_monodromy_coordinate(Operator(target).data)
+
+    target_coords = convert_gate_to_monodromy_coordinate(target, use_fast_settings)
 
     # iterate through coverage set to find exact decomposition polytope
     # XXX assume has been sorted by cost

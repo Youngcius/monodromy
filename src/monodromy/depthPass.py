@@ -1,6 +1,7 @@
 import logging
 from functools import lru_cache
 
+import numpy as np
 import retworkx
 from qiskit.circuit import Instruction
 from qiskit.dagcircuit import DAGCircuit, DAGOpNode
@@ -9,6 +10,7 @@ from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes import Collect2qBlocks, ConsolidateBlocks
 
 from monodromy.coverage import (
+    convert_gate_to_monodromy_coordinate,
     coverage_lookup_cost,
     gates_to_coverage,
     print_coverage_set,
@@ -111,6 +113,22 @@ class MonodromyPass(AnalysisPass):
             logging.info(print_coverage_set(coverage_set))
 
         return coverage_set
+
+
+class MonodromyCountSwaps(MonodromyPass):
+    """MonodromyCountSwaps counts the number of SWAP gates in a given
+    CircuitDAG."""
+
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
+        # check if gate has coordinate [0.25, 0.25, 0.25, -0.75], if so, it is a SWAP
+        swap_count = 0
+        for gate_node in dag.two_qubit_ops():
+            t_c = convert_gate_to_monodromy_coordinate(gate_node.op)
+            # need to check if close, ie [0.25, 0.25, 0.249999, -0.7499999]
+            if np.allclose(t_c, [0.25, 0.25, 0.25, -0.75]):
+                swap_count += 1
+        self.property_set["total_swaps"] = swap_count
+        return dag
 
 
 class MonodromyTotal(MonodromyPass):

@@ -23,35 +23,29 @@ def _plot_polytope(circuit_polytope, w, color="red"):
     )
     polytope_vertices = np.array([[float(b) for b in a] for a in polytope_vertices[0]])
 
-    # we seem to have issue with symmetries, my fix is to add adjoints manually
-    # this is a symmetry over the x-axis we can compute by adding (1-x, y, z) to the coordinate lists
-    polytope_vertices = np.concatenate(
-        (
-            polytope_vertices,
-            np.array([[1 - a[0], a[1], a[2]] for a in polytope_vertices]),
-        )
-    )
-    # delete duplicates that might exist
-    polytope_vertices = np.unique(polytope_vertices, axis=0)
+    left_vertices = polytope_vertices
+    right_vertices = np.array([[1 - a[0], a[1], a[2]] for a in polytope_vertices])
 
-    if len(polytope_vertices) < 3:
-        w.ax.scatter3D(*zip(*polytope_vertices), color=color)
-    elif len(polytope_vertices) == 3:
-        triangle = Poly3DCollection([polytope_vertices])
-        triangle.set_facecolor(color)
-        triangle.set_edgecolor("k")
-        triangle.set_alpha(0.5)
-        w.ax.add_collection3d(triangle)
-    else:
-        # TODO use Qbk:0Bk:0 - drop dimension k from the input points
-        hull = ss.ConvexHull(polytope_vertices, qhull_options="QJ")
-        faces = Poly3DCollection(
-            [polytope_vertices[simplex] for simplex in hull.simplices]
-        )
-        faces.set_facecolor(color)
-        faces.set_alpha(0.2)
-        faces.set_edgecolor("k")
-        w.ax.add_collection3d(faces)
+    for vertices in [left_vertices, right_vertices]:
+        # delete duplicates that might exist
+        vertices = np.unique(vertices, axis=0)
+
+        if len(vertices) < 3:
+            w.ax.scatter3D(*zip(*vertices), color=color)
+        elif len(vertices) == 3:
+            triangle = Poly3DCollection([vertices])
+            triangle.set_facecolor(color)
+            triangle.set_edgecolor("k")
+            triangle.set_alpha(0.5)
+            w.ax.add_collection3d(triangle)
+        else:
+            # TODO use Qbk:0Bk:0 - drop dimension k from the input points
+            hull = ss.ConvexHull(vertices, qhull_options="QJ")
+            faces = Poly3DCollection([vertices[simplex] for simplex in hull.simplices])
+            faces.set_facecolor(color)
+            faces.set_alpha(0.2)
+            faces.set_edgecolor("k")
+            w.ax.add_collection3d(faces)
 
 
 def _plot_coverage_set(coverage_set, overlap=False):
@@ -109,6 +103,8 @@ def _plot_coverage_set(coverage_set, overlap=False):
             w.ax.set_title(f"Cost: {cost}")
 
     plt.show()
+    # save fig
+    fig.savefig("coverage_set.svg")
 
 
 def gates_to_coverage_plot(*gates: Instruction, costs=None, overlap=False):
