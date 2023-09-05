@@ -48,7 +48,8 @@ U2 = iSwapGate().power(1 / 4)
 coverage = gates_to_coverage_plot(U, U2, costs=[0.5, 0.25])
 ```
 
-![monodromy coverage 2](images/image2.png)
+![image](https://github.com/evmckinney9/monodromy/assets/47376937/574e5c95-8825-41de-a55b-773f6d15ed9c)
+
 
 Previously, `CircuitPolytopes` only tracked strings for operation names. Modification tracks the actual `Instruction` objects, allowing for coverage set lookup to return parameterized quantum circuits for decomposition purposes.
 
