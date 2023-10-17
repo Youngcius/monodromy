@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 from qiskit.circuit import Instruction
 from qiskit.quantum_info import Operator
 from qiskit.transpiler.exceptions import TranspilerError
@@ -79,7 +80,9 @@ def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPol
     return CircuitPolytope(
         operations=[
             f"{operation.name}({operation.params[0]:.5f})"
-            if operation.params and len(operation.params) > 0
+            if operation.params
+            and len(operation.params) > 0
+            and not isinstance(operation.params[0], np.ndarray)
             else f"{operation.name}"
         ],
         instructions=[operation],
