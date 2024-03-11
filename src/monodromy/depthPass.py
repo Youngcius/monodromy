@@ -63,7 +63,7 @@ class MonodromyPass(AnalysisPass):
         if (
             consolidate or consolidator
         ):  # default False: assume pass manager has already done this
-            if consolidator is None:
+            if consolidator is not None:
                 self.requires = [consolidator]
             else:
                 self.requires = [
