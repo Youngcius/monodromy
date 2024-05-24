@@ -11,7 +11,6 @@ from qiskit import QuantumCircuit
 from qiskit.circuit import Gate
 from qiskit.circuit.parameter import Parameter
 from qiskit.quantum_info import Operator
-from transpile_benchy.utilities.numerical_decomp import BasicDecomposer
 
 from monodromy.coordinates import (
     monodromy_to_positive_canonical_coordinate,
@@ -179,6 +178,7 @@ def numerical_decompose(
 ) -> QuantumCircuit:
     """Finds the circuit parameterization to build target."""
     ansatz = target_build_ansatz(circuit_polytope.instructions)
+    from transpile_benchy.utilities.numerical_decomp import BasicDecomposer
     # decomposer = Advanced2QDecomposer(basis_gates=None)
     decomposer = BasicDecomposer(basis_gates=None)
     nearest_qc = decomposer.decompose_from_ansatz(
