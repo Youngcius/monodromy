@@ -25,6 +25,9 @@ from .polytopes import Polytope, trim_polytope_set
 from .static.examples import everything_polytope, identity_polytope
 from .static.qlr_table import qlr_polytope
 
+# duration cost ratio of single qubit gates to two qubit gates
+# e.g. 50ns to 100ns, -> 1/2
+Q1_GATE_COST = 0
 
 @dataclass
 class CircuitPolytope(Polytope, CircuitPolytopeData):
@@ -52,7 +55,7 @@ class CircuitPolytope(Polytope, CircuitPolytopeData):
         )
 
 
-def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPolytope:
+def _operation_to_circuit_polytope(operation: Instruction, cost=1, single_qubit_cost=Q1_GATE_COST) -> CircuitPolytope:
     """The operation_to_circuit_polytope() function takes a qiskit.Instruction
     object and returns a CircuitPolytope object that represents the unitary of
     the operation.
@@ -86,13 +89,13 @@ def _operation_to_circuit_polytope(operation: Instruction, cost=1) -> CircuitPol
             else f"{operation.name}"
         ],
         instructions=[operation],
-        cost=cost,
+        cost=cost + 2 * single_qubit_cost, # * 2 for first and last layers
         convex_subpolytopes=convex_polytope.convex_subpolytopes,
     )
 
 
 def gates_to_coverage(
-    *gates: Instruction, costs=None, sort=True
+    *gates: Instruction, costs=None, sort=True, single_qubit_cost=Q1_GATE_COST,
 ) -> List[CircuitPolytope]:
     """Calculates coverage given a basis gate set."""
     for gate in gates:
@@ -103,9 +106,9 @@ def gates_to_coverage(
         costs = [1 if gate.name != "swap" else 0 for gate in gates]
 
     operations = [
-        _operation_to_circuit_polytope(gate, cost=c) for gate, c in zip(gates, costs)
+        _operation_to_circuit_polytope(gate, cost=c, single_qubit_cost=single_qubit_cost) for gate, c in zip(gates, costs)
     ]
-    coverage_set = build_coverage_set(operations)
+    coverage_set = build_coverage_set(operations, single_qubit_cost=single_qubit_cost)
 
     if sort:
         return sorted(coverage_set, key=lambda k: k.cost)
@@ -311,6 +314,7 @@ def prereduce_operation_polytopes(
 def build_coverage_set(
     operations: List[CircuitPolytope],
     chatty: bool = False,
+    single_qubit_cost=Q1_GATE_COST
 ) -> List[CircuitPolytope]:
     """Given a set of `operations`, thought of as members of a native gate set,
     this emits a list of circuit shapes built as sequences of those operations
@@ -417,6 +421,7 @@ def build_coverage_set(
         # if this polytope is NOT of maximum volume,
         if monodromy_alcove_c2.volume > new_polytope.volume:
             # add this polytope + the continuations to the priority queue
+            # NOTE subtract 1Q cost, because each successive layer +1, but each circuitpolytope is +2
             for operation in operations:
                 heapq.heappush(
                     to_be_explored,
@@ -424,7 +429,7 @@ def build_coverage_set(
                         operations=next_polytope.operations + operation.operations,
                         instructions=next_polytope.instructions
                         + operation.instructions,
-                        cost=next_polytope.cost + operation.cost,
+                        cost=next_polytope.cost + operation.cost - single_qubit_cost,
                         convex_subpolytopes=operation.convex_subpolytopes,
                     ),
                 )

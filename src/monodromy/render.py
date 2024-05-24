@@ -104,17 +104,17 @@ def _plot_coverage_set(coverage_set, overlap=False):
 
     plt.show()
     # save fig
-    fig.savefig("coverage_set.svg")
+    # fig.savefig("coverage_set.svg")
 
 
-def gates_to_coverage_plot(*gates: Instruction, costs=None, overlap=False):
+def gates_to_coverage_plot(*gates: Instruction, costs=None, overlap=False, single_qubit_cost=0.0):
     """Plot the coverage set of a gate.
 
     Args:
         gate (Instruction): a gate.
         overlap (bool): If True, all polytopes are drawn on the same plot. If False, each polytope is drawn in a separate subplot.
     """
-    coverage_set = gates_to_coverage(*gates, costs=costs, sort=True)
+    coverage_set = gates_to_coverage(*gates, costs=costs, sort=True, single_qubit_cost=single_qubit_cost)
     _plot_coverage_set(coverage_set, overlap=overlap)
     return coverage_set
 
