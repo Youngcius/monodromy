@@ -89,7 +89,8 @@ def _operation_to_circuit_polytope(operation: Instruction, cost=1, single_qubit_
             else f"{operation.name}"
         ],
         instructions=[operation],
-        cost=cost + 2 * single_qubit_cost, # * 2 for first and last layers
+        # cost=cost + 2 * single_qubit_cost, # * 2 for first and last layers
+        cost = cost + single_qubit_cost, # NOTE new convention only counts 1 of the exterior
         convex_subpolytopes=convex_polytope.convex_subpolytopes,
     )
 
@@ -321,8 +322,8 @@ def build_coverage_set(
     which is:
 
     + Exhaustive: Every two-qubit unitary is covered by one of the
-    circuit               designs in the list. + Irredundant: No circuit
-    design is completely contained within other                designs
+    circuit designs in the list. 
+    + Irredundant: No circuit design is completely contained within other designs
     in the list which are of equal or lower cost.
 
     If `chatty` is toggled, emits progress messages.
@@ -429,7 +430,8 @@ def build_coverage_set(
                         operations=next_polytope.operations + operation.operations,
                         instructions=next_polytope.instructions
                         + operation.instructions,
-                        cost=next_polytope.cost + operation.cost - single_qubit_cost,
+                        # cost=next_polytope.cost + operation.cost - single_qubit_cost,
+                        cost = next_polytope.cost + operation.cost, # NOTE updated cost convention
                         convex_subpolytopes=operation.convex_subpolytopes,
                     ),
                 )
