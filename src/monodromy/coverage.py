@@ -29,6 +29,7 @@ from .static.qlr_table import qlr_polytope
 # e.g. 50ns to 100ns, -> 1/2
 Q1_GATE_COST = 0
 
+
 @dataclass
 class CircuitPolytope(Polytope, CircuitPolytopeData):
     """A polytope describing the alcove coverage of a particular circuit
@@ -55,7 +56,13 @@ class CircuitPolytope(Polytope, CircuitPolytopeData):
         )
 
 
-def _operation_to_circuit_polytope(operation: Instruction, cost=1, single_qubit_cost=Q1_GATE_COST) -> CircuitPolytope:
+def _operation_to_circuit_polytope(
+    operation: Instruction,
+    cost=1,
+    name=None,
+    instruction=None,
+    single_qubit_cost=Q1_GATE_COST,
+) -> CircuitPolytope:
     """The operation_to_circuit_polytope() function takes a qiskit.Instruction
     object and returns a CircuitPolytope object that represents the unitary of
     the operation.
@@ -78,25 +85,34 @@ def _operation_to_circuit_polytope(operation: Instruction, cost=1, single_qubit_
         c_polytope=everything_polytope,
     )
 
-    # FIXME, these parameters are grabbing the matrix elements of the gate
-    # we need a better way to distinguish between operators
-    return CircuitPolytope(
-        operations=[
+    if name is None:  # try to come up with something
+        op_name = (
             f"{operation.name}({operation.params[0]:.5f})"
             if operation.params
             and len(operation.params) > 0
             and not isinstance(operation.params[0], np.ndarray)
             else f"{operation.name}"
-        ],
-        instructions=[operation],
+        )
+    else:
+        op_name = name  # Use provided name if available
+
+    return CircuitPolytope(
+        operations=[op_name],
+        instructions=[instruction],
         # cost=cost + 2 * single_qubit_cost, # * 2 for first and last layers
-        cost = cost + single_qubit_cost, # NOTE new convention only counts 1 of the exterior
+        cost=cost
+        + single_qubit_cost,  # NOTE new convention only counts 1 of the exterior
         convex_subpolytopes=convex_polytope.convex_subpolytopes,
     )
 
 
 def gates_to_coverage(
-    *gates: Instruction, costs=None, sort=True, single_qubit_cost=Q1_GATE_COST,
+    *gates: Instruction,
+    costs=None,
+    names=None,
+    instructions=None,
+    sort=True,
+    single_qubit_cost=Q1_GATE_COST,
 ) -> List[CircuitPolytope]:
     """Calculates coverage given a basis gate set."""
     for gate in gates:
@@ -107,7 +123,10 @@ def gates_to_coverage(
         costs = [1 if gate.name != "swap" else 0 for gate in gates]
 
     operations = [
-        _operation_to_circuit_polytope(gate, cost=c, single_qubit_cost=single_qubit_cost) for gate, c in zip(gates, costs)
+        _operation_to_circuit_polytope(
+            gate, cost=c, name=n, instruction=i, single_qubit_cost=single_qubit_cost
+        )
+        for gate, c, n, i in zip(gates, costs, names, instructions)
     ]
     coverage_set = build_coverage_set(operations, single_qubit_cost=single_qubit_cost)
 
@@ -315,14 +334,14 @@ def prereduce_operation_polytopes(
 def build_coverage_set(
     operations: List[CircuitPolytope],
     chatty: bool = False,
-    single_qubit_cost=Q1_GATE_COST
+    single_qubit_cost=Q1_GATE_COST,
 ) -> List[CircuitPolytope]:
     """Given a set of `operations`, thought of as members of a native gate set,
     this emits a list of circuit shapes built as sequences of those operations
     which is:
 
     + Exhaustive: Every two-qubit unitary is covered by one of the
-    circuit designs in the list. 
+    circuit designs in the list.
     + Irredundant: No circuit design is completely contained within other designs
     in the list which are of equal or lower cost.
 
@@ -431,7 +450,8 @@ def build_coverage_set(
                         instructions=next_polytope.instructions
                         + operation.instructions,
                         # cost=next_polytope.cost + operation.cost - single_qubit_cost,
-                        cost = next_polytope.cost + operation.cost, # NOTE updated cost convention
+                        cost=next_polytope.cost
+                        + operation.cost,  # NOTE updated cost convention
                         convex_subpolytopes=operation.convex_subpolytopes,
                     ),
                 )
