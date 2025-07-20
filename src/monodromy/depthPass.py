@@ -2,7 +2,7 @@ import logging
 from functools import lru_cache
 
 import numpy as np
-import retworkx
+import rustworkx
 from qiskit.circuit import Instruction
 from qiskit.dagcircuit import DAGCircuit, DAGOpNode
 from qiskit.transpiler import AnalysisPass, TransformationPass
@@ -35,12 +35,12 @@ class MonodromyPass(AnalysisPass):
     _coverage_cache = {}  # Class level cache
 
     def __init__(
-        self,
-        basis_gate: Instruction,
-        gate_cost: float = 1.0,
-        consolidate: bool = False,
-        consolidator: TransformationPass = None,
-        use_fast_settings: bool = True,
+            self,
+            basis_gate: Instruction,
+            gate_cost: float = 1.0,
+            consolidate: bool = False,
+            consolidator: TransformationPass = None,
+            use_fast_settings: bool = True,
     ):
         """Initializes the MonodromyDepth pass.
 
@@ -61,7 +61,7 @@ class MonodromyPass(AnalysisPass):
         assert basis_gate.num_qubits == 2, "Basis gate must be a 2Q gate."
 
         if (
-            consolidate or consolidator
+                consolidate or consolidator
         ):  # default False: assume pass manager has already done this
             if consolidator is not None:
                 self.requires = [consolidator]
@@ -142,56 +142,131 @@ class MonodromyTotal(MonodromyPass):
         self.property_set["monodromy_total"] = total_cost
 
 
+#
+# class MonodromyDepth(MonodromyPass):
+#     """MonodromyDepth calculates the depth of a given CircuitDAG with respect
+#     to a specified 2-qubit basis gate."""
+#
+#     def run(self, dag: DAGCircuit) -> DAGCircuit:
+#         """Find longest_path by iterating over edges and using a weight
+#         function."""
+#         # from qiskit.converters import dag_to_circuit
+#         # print(dag_to_circuit(dag).draw(fold=-1))
+#
+#         SCALE_FACTOR = 1000  # scale factor to convert floats to integers
+#
+#         # Keeping track of the last iteration saves nearly 50% of the time
+#         last_lookup = (None, None)
+#
+#         def weight_fn(_1, node, _2) -> int:
+#             """Weight function for longest path algorithm.
+#
+#             Since this iterates over edges, every node is counted twice.
+#             (Since every 2Q gate will have 2 incoming edges).
+#             """
+#             if self.use_fast_settings:
+#                 nonlocal last_lookup
+#                 if node == last_lookup[0]:
+#                     return last_lookup[1]
+#             target_node = dag._multi_graph[node]
+#             if not isinstance(target_node, DAGOpNode):
+#                 return 0
+#             elif target_node.op.name in ["barrier", "measure"]:
+#                 return 0
+#             elif len(target_node.qargs) == 1:
+#                 return 0
+#             elif len(target_node.qargs) > 2:
+#                 raise TranspilerError("Operation not supported.")
+#             else:
+#                 float_cost = coverage_lookup_cost(
+#                     self.coverage_set,
+#                     target_node.op,
+#                     use_fast_settings=self.use_fast_settings,
+#                 )[0]
+#                 int_cost = int(float_cost * SCALE_FACTOR)
+#                 last_lookup = (node, int_cost)
+#                 return int_cost
+#
+#         longest_path_length = rustworkx.dag_longest_path_length(
+#             dag._multi_graph, weight_fn=weight_fn
+#         )
+#
+#         # convert back to float
+#         longest_path_length /= SCALE_FACTOR
+#
+#         if self.chatty:
+#             logging.info(f"Longest path length: {longest_path_length}")
+#
+#         self.property_set["monodromy_depth"] = longest_path_length
+#         return dag
+
+
 class MonodromyDepth(MonodromyPass):
     """MonodromyDepth calculates the depth of a given CircuitDAG with respect
     to a specified 2-qubit basis gate."""
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
-        """Find longest_path by iterating over edges and using a weight
-        function."""
+        """Find longest_path by using topological ordering and dynamic programming."""
         # from qiskit.converters import dag_to_circuit
         # print(dag_to_circuit(dag).draw(fold=-1))
-
-        SCALE_FACTOR = 1000  # scale factor to convert floats to integers
 
         # Keeping track of the last iteration saves nearly 50% of the time
         last_lookup = (None, None)
 
-        def weight_fn(_1, node, _2) -> int:
-            """Weight function for longest path algorithm.
-
-            Since this iterates over edges, every node is counted twice.
-            (Since every 2Q gate will have 2 incoming edges).
-            """
+        def get_node_weight(node) -> float:
+            """Get the weight (cost) of a DAGOpNode."""
             if self.use_fast_settings:
                 nonlocal last_lookup
                 if node == last_lookup[0]:
                     return last_lookup[1]
-            target_node = dag._multi_graph[node]
-            if not isinstance(target_node, DAGOpNode):
-                return 0
-            elif target_node.op.name in ["barrier", "measure"]:
-                return 0
-            elif len(target_node.qargs) == 1:
-                return 0
-            elif len(target_node.qargs) > 2:
+
+            if not isinstance(node, DAGOpNode):
+                return 0.0
+            elif node.op.name in ["barrier", "measure"]:
+                return 0.0
+            elif len(node.qargs) == 1:
+                return 0.0
+            elif len(node.qargs) > 2:
                 raise TranspilerError("Operation not supported.")
             else:
                 float_cost = coverage_lookup_cost(
                     self.coverage_set,
-                    target_node.op,
+                    node.op,
                     use_fast_settings=self.use_fast_settings,
                 )[0]
-                int_cost = int(float_cost * SCALE_FACTOR)
-                last_lookup = (node, int_cost)
-                return int_cost
+                last_lookup = (node, float_cost)
+                return float_cost
 
-        longest_path_length = retworkx.dag_longest_path_length(
-            dag._multi_graph, weight_fn=weight_fn
-        )
+        # Use dynamic programming to find the longest weighted path
+        # Initialize distances for all nodes
+        distances = {}
 
-        # convert back to float
-        longest_path_length /= SCALE_FACTOR
+        # Get all nodes in topological order
+        topo_nodes = list(dag.topological_op_nodes())
+
+        # Initialize distances for input nodes
+        for node in dag.input_map.values():
+            distances[node] = 0.0
+
+        # Process nodes in topological order
+        for node in topo_nodes:
+            if node not in distances:
+                distances[node] = 0.0
+
+            # Get the weight of current node
+            node_weight = get_node_weight(node)
+
+            # Update distances for all successors
+            for successor in dag.successors(node):
+                current_distance = distances.get(successor, 0.0)
+                new_distance = distances[node] + node_weight
+                distances[successor] = max(current_distance, new_distance)
+
+        # Find maximum distance among output nodes
+        longest_path_length = 0.0
+        for node in dag.output_map.values():
+            if node in distances:
+                longest_path_length = max(longest_path_length, distances[node])
 
         if self.chatty:
             logging.info(f"Longest path length: {longest_path_length}")

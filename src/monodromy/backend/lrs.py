@@ -228,6 +228,8 @@ def decode_inequalities(lrs_output: bytes):
             break_at_end = True
             continue
         # check that we're looking at the right kind of representation
+        if line == "name":
+            continue
         if line == "H-representation":
             continue
         if line == "V-representation":
@@ -323,6 +325,8 @@ def decode_vertices(lrs_output: bytes):
             continue
         if line.startswith("begin"):
             vertices = []
+            continue
+        if line == "name":
             continue
         if line == "V-representation":
             continue

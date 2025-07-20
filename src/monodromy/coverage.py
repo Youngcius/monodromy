@@ -122,6 +122,12 @@ def gates_to_coverage(
     if costs is None:
         costs = [1 if gate.name != "swap" else 0 for gate in gates]
 
+    if names is None:
+        names = [None for _ in range(len(costs))]
+
+    if instructions is None:
+        instructions = [None for _ in range(len(costs))]
+
     operations = [
         _operation_to_circuit_polytope(
             gate, cost=c, name=n, instruction=i, single_qubit_cost=single_qubit_cost
