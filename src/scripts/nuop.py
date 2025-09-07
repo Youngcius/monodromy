@@ -18,8 +18,8 @@ from time import perf_counter
 import numpy as np
 import qiskit
 from qiskit.circuit.library.standard_gates import RZZGate
-from qiskit.extensions.unitary import UnitaryGate
-from qiskit.quantum_info.synthesis.xx_decompose import XXDecomposer
+from qiskit.circuit.library import UnitaryGate
+from qiskit.synthesis import XXDecomposer
 from scipy.optimize import minimize
 from scipy.stats import unitary_group
 

@@ -1,6 +1,6 @@
 import numpy as np
 import qiskit.quantum_info
-from qiskit.quantum_info.synthesis.xx_decompose import XXDecomposer
+from qiskit.synthesis import XXDecomposer
 from scipy.stats import unitary_group
 
 import monodromy.render

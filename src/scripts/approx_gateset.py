@@ -18,7 +18,7 @@ from time import perf_counter
 import numpy as np
 import pybobyqa
 import qiskit
-from qiskit.quantum_info.synthesis.xx_decompose import XXDecomposer
+from qiskit.synthesis import XXDecomposer
 from scipy.stats import unitary_group
 
 gateset_dimension = 2  # how many gates to include beyond a full CX
